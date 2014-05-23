@@ -101,14 +101,18 @@ Or taskr may register duplicate argument.
 
 
 
-## Usage - Console
+## Usage - console & Color
 
 The ```console``` helps you to print color message on console.
-
-```
-console.color_str('Hello World', foreground=console.RED, background=console.WHITE, light=True)
-```
 
 It gives you a str 'Hello World' with loght red color and white background.
 Also you can use ```console.info```, ```console.error```, ```console.success```, ```console.highlight```,
 and ```console.prompt``` to print messages
+
+To get colored string, use Color.str.
+
+```
+Color.str('Hello World', foreground=Color.RED, background=Color.White, light=True)
+```
+
+It gives a 'Hello World' string with light red text and white background.

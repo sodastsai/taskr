@@ -16,8 +16,9 @@
 
 from .taskr import Task
 from .terminal import Console
+from .terminal import Color
 
 task = Task
 console = Console
 
-__all__ = [Task.__name__, Console.__name__, 'task', 'console']
+__all__ = [Task.__name__, Console.__name__, Color.__name__, 'task', 'console']

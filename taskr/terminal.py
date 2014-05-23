@@ -17,7 +17,7 @@
 #
 
 
-class Console(object):
+class Color(object):
     LIGHT = 1
     FOREGROUND = 30
     BACKGROUND = 40
@@ -31,7 +31,7 @@ class Console(object):
     WHITE = 7
 
     @classmethod
-    def color_str(cls, message, foreground=-1, background=-1, light=False):
+    def str(cls, message, foreground=-1, background=-1, light=False):
         codes = []
         if light:
             codes.append(str(cls.LIGHT))
@@ -41,26 +41,29 @@ class Console(object):
             codes.append(str(cls.BACKGROUND + background))
         return '\033[{0}m{1}\033[m'.format(';'.join(codes), message)
 
+
+class Console(object):
+
     @classmethod
     def error(cls, message):
-        print(cls.color_str('😱  {0}'.format(message), cls.RED))
+        print(Color.str('😱  {0}'.format(message), Color.RED))
 
     @classmethod
     def success(cls, message):
-        print(cls.color_str('🍺  {0}'.format(message), cls.GREEN))
+        print(Color.str('🍺  {0}'.format(message), Color.GREEN))
 
     @classmethod
     def info(cls, message):
-        print(cls.color_str('✈️  {0}'.format(message), cls.CYAN))
+        print(Color.str('✈️  {0}'.format(message), Color.CYAN))
 
     @classmethod
     def prompt(cls, message):
-        print(cls.color_str('👻  {0}'.format(message), cls.MAGENTA))
+        print(Color.str('👻  {0}'.format(message), Color.MAGENTA))
 
     @classmethod
     def highlight(cls, message):
-        print(cls.color_str('🚬  {0}'.format(message), cls.CYAN, light=True))
+        print(Color.str('🚬  {0}'.format(message), Color.CYAN, light=True))
 
     @classmethod
     def show(cls, message, foreground=-1, background=-1, light=False):
-        print(cls.color_str(message, foreground, background, light))
+        print(Color.str(message, foreground, background, light))
