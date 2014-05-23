@@ -14,8 +14,8 @@
 # limitations under the License.
 #
 
-from taskr.taskr import Task
-from taskr.terminal import Console
+from .taskr import Task
+from .terminal import Console
 
 task = Task
 console = Console
