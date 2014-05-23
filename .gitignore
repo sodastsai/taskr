@@ -42,3 +42,10 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# OS X
+.DS_Store
+
+# IDEA/Pycharm
+.idea
+
