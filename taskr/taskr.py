@@ -99,6 +99,8 @@ class Task(object):
             arg_name = '--' + kwarg_name.replace('_', '-')
             if arg_name in manual_arguments:
                 arg_args, arg_kwargs = manual_arguments[arg_name]
+                if 'default' not in arg_kwargs:
+                    arg_kwargs['default'] = default_value
                 parser.add_argument(*arg_args, **arg_kwargs)
             else:
                 parser.add_argument(arg_name, default=default_value)
