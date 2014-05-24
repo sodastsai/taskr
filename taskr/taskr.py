@@ -69,8 +69,12 @@ class Task(object):
 
         return wrap
 
-    def __init__(self, func):
+    def __init__(self, func, assigned=functools.WRAPPER_ASSIGNMENTS):
         self.function = func
+        # Keep attributes
+        for attr in assigned:
+            setattr(self, attr, getattr(func, attr))
+
         # Register this task to argparse
         parser = self.subparsers.add_parser(hasattr(func, 'name') and func.name or func.__name__)
         parser.set_defaults(__instance__=self)
@@ -113,6 +117,9 @@ class Task(object):
 
     def __call__(self, *args, **kwargs):
         self.function(*args, **kwargs)
+
+    def __repr__(self):
+        return self.function and repr(self.function) or super().__repr__()
 
     @classmethod
     def error(cls, message):
