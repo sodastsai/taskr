@@ -39,7 +39,12 @@ class Task(object):
         def wrap(f):
             if not hasattr(f, 'arguments'):
                 f.arguments = {}
-            f.arguments[args[0]] = (args, kwargs)
+            if 'dest' in kwargs:
+                f.arguments[kwargs['dest']] = (args, kwargs)
+            else:
+                # Register each argparse argument name for mapping function argument
+                for arg in args:
+                    f.arguments[arg] = (args, kwargs)
 
             @functools.wraps(f)
             def wrapped(*w_args, **w_kwargs):
@@ -97,8 +102,9 @@ class Task(object):
                 parser.add_argument(arg_name)
         for kwarg_name, default_value in kwargs.items():
             arg_name = '--' + kwarg_name.replace('_', '-')
-            if arg_name in manual_arguments:
-                arg_args, arg_kwargs = manual_arguments[arg_name]
+            use_kwarg_name = kwarg_name in manual_arguments
+            if use_kwarg_name or arg_name in manual_arguments:
+                arg_args, arg_kwargs = manual_arguments[(use_kwarg_name and kwarg_name or arg_name)]
                 if 'default' not in arg_kwargs:
                     arg_kwargs['default'] = default_value
                 parser.add_argument(*arg_args, **arg_kwargs)
