@@ -17,77 +17,72 @@
 import argparse
 import functools
 import inspect
+import weakref
 
+
+# Task Info
+# ======================================================================================================================
+
+class _TaskInfo(object):
+
+    def __init__(self, func):
+        self.weak_function = weakref.ref(func)
+        self.name = func.__name__
+        self.arguments = {}
+
+
+# Task
+# ======================================================================================================================
 
 class Task(object):
-    # Argument parser
-    parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(title='Action')
+
+    parser = None
+    subparsers = None
+
+    # Setup
+    # ------------------------------------------------------------------------------------------------------------------
 
     @classmethod
-    def dispatch(cls):
-        args = cls.parser.parse_args()
-        if hasattr(args, '__instance__'):
-            kwargs = dict(vars(args))
-            del kwargs['__instance__']
-            args.__instance__(**kwargs)
-        else:
-            cls.parser.print_help()
+    def setup(cls, *args, **kwargs):
+        # Argument parser
+        cls.parser = argparse.ArgumentParser(*args, **kwargs)
 
     @classmethod
-    def set_argument(cls, *args, **kwargs):
-        def wrap(f):
-            if not hasattr(f, 'arguments'):
-                f.arguments = {}
-            if 'dest' in kwargs:
-                f.arguments[kwargs['dest']] = (args, kwargs)
-            else:
-                # Register each argparse argument name for mapping function argument
-                for arg in args:
-                    f.arguments[arg] = (args, kwargs)
+    def setup_action(cls, *args, **kwargs):
+        # setup parser
+        if not cls.parser:
+            cls.setup()
 
-            @functools.wraps(f)
-            def wrapped(*w_args, **w_kwargs):
-                return f(*w_args, **w_kwargs)
-            wrapped.original_func = f
+        if 'title' not in kwargs:
+            kwargs['title'] = 'Action'
+        cls.subparsers = cls.parser.add_subparsers(*args, **kwargs)
 
-            return wrapped
-
-        return wrap
-
-    @classmethod
-    def set_name(cls, name):
-        def wrap(f):
-            f.name = name
-
-            @functools.wraps(f)
-            def wrapped(*w_args, **w_kwargs):
-                return f(*w_args, **w_kwargs)
-            wrapped.original_func = f
-
-            return wrapped
-
-        return wrap
+    # Register and execution
+    # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, func, assigned=functools.WRAPPER_ASSIGNMENTS):
+        # setup base
+        if not self.parser:
+            self.setup()
+        if not self.subparsers:
+            self.setup_action()
+
         self.function = func
-        # Keep attributes
+        # Keep attributes (like functools.wraps
         for attr in assigned:
             setattr(self, attr, getattr(func, attr))
 
+        task_info = self._get_task_info(self.function)
+
         # Register this task to argparse
-        parser = self.subparsers.add_parser(hasattr(func, 'name') and func.name or func.__name__)
+        parser = self.subparsers.add_parser(task_info.name)
         parser.set_defaults(__instance__=self)
 
-        # Get argument spec from original func for setting arguments
-        original_func = func
-        while hasattr(original_func, 'original_func'):
-            original_func = original_func.original_func
+        # Get argument spec of function
         try:
-            arg_spec = inspect.getfullargspec(original_func)
+            arg_spec = inspect.getfullargspec(task_info.weak_function())
         except AttributeError:
-            arg_spec = inspect.getargspec(original_func)
-
+            arg_spec = inspect.getargspec(task_info.weak_function())
         # Parse argument spec into args list and kwargs dict
         if arg_spec.defaults:
             args = arg_spec.args[:-len(arg_spec.defaults)]
@@ -97,7 +92,7 @@ class Task(object):
             kwargs = {}
 
         # Setting arguments
-        manual_arguments = hasattr(func, 'arguments') and func.arguments or {}
+        manual_arguments = task_info.arguments
         for arg_name in args:
             if arg_name in manual_arguments:
                 arg_args, arg_kwargs = manual_arguments[arg_name]
@@ -116,15 +111,64 @@ class Task(object):
                 parser.add_argument(arg_name, default=default_value)
 
     def __call__(self, *args, **kwargs):
-        self.function(*args, **kwargs)
+        return self.function(*args, **kwargs)
 
     def __repr__(self):
-        return self.function and repr(self.function) or super().__repr__()
+        return repr(self.function)
+
+    # Dispatch
+    # ------------------------------------------------------------------------------------------------------------------
 
     @classmethod
-    def error(cls, message):
-        cls.parser.error(message)
+    def dispatch(cls):
+        args = cls.parser.parse_args()
+        if hasattr(args, '__instance__'):
+            kwargs = dict(vars(args))
+            del kwargs['__instance__']
+            args.__instance__(**kwargs)
+        else:
+            cls.parser.print_help()
+
+    # Decorators
+    # ------------------------------------------------------------------------------------------------------------------
 
     @classmethod
-    def exit(cls, status=0, message=None):
-        cls.parser.exit(status, message)
+    def set_name(cls, name):
+        def decorator(func):
+            cls._get_task_info(func).name = name
+
+            @functools.wraps(func)
+            def wrapper(*func_args, **func_kwargs):
+                return func(*func_args, **func_kwargs)
+            return wrapper
+        return decorator
+
+    @classmethod
+    def set_argument(cls, *args, **kwargs):
+        def decorator(func):
+
+            task_info = cls._get_task_info(func)
+            if 'dest' in kwargs:
+                task_info.arguments[kwargs['dest']] = (args, kwargs)
+            else:
+                # Register each argparse argument name for mapping function argument
+                for arg in args:
+                    task_info.arguments[arg] = (args, kwargs)
+
+            @functools.wraps(func)
+            def wrapper(*func_args, **func_kwargs):
+                return func(*func_args, **func_kwargs)
+
+            return wrapper
+
+        return decorator
+
+    # Utils
+    # ------------------------------------------------------------------------------------------------------------------
+
+    # noinspection PyProtectedMember
+    @classmethod
+    def _get_task_info(cls, func):
+        if not hasattr(func, '_taskr_info'):
+            func._taskr_info = _TaskInfo(func)
+        return func._taskr_info
