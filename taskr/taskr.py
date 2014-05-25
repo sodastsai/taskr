@@ -32,6 +32,10 @@ class _TaskInfo(object):
         self.arguments = OrderedDict()
         self.pass_namespace = False
 
+    @property
+    def function(self):
+        return self.weak_function()
+
 
 # Task
 # ======================================================================================================================
@@ -92,9 +96,9 @@ class Task(object):
 
             # Get argument spec of function
             try:
-                arg_spec = inspect.getfullargspec(task_info.weak_function())
+                arg_spec = inspect.getfullargspec(task_info.function)
             except AttributeError:
-                arg_spec = inspect.getargspec(task_info.weak_function())
+                arg_spec = inspect.getargspec(task_info.function)
             # Parse argument spec into args list and kwargs dict
             if arg_spec.defaults:
                 args = arg_spec.args[:-len(arg_spec.defaults)]
