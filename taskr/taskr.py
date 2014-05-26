@@ -109,21 +109,13 @@ class Task(object):
 
             # Register
             for arg_name in args:
-                if arg_name in manual_arguments:
-                    arg_args, arg_kwargs = manual_arguments[arg_name]
-                    parser.add_argument(*arg_args, **arg_kwargs)
-                else:
-                    parser.add_argument(arg_name)
+                arg_args, arg_kwargs = manual_arguments.get(arg_name, ((arg_name,), {}))
+                parser.add_argument(*arg_args, **arg_kwargs)
             for kwarg_name, default_value in kwargs.items():
-                arg_name = '--' + kwarg_name.replace('_', '-')
-                use_kwarg_name = kwarg_name in manual_arguments
-                if use_kwarg_name or arg_name in manual_arguments:
-                    arg_args, arg_kwargs = manual_arguments[(use_kwarg_name and kwarg_name or arg_name)]
-                    if 'default' not in arg_kwargs:
-                        arg_kwargs['default'] = default_value
-                    parser.add_argument(*arg_args, **arg_kwargs)
-                else:
-                    parser.add_argument(arg_name, default=default_value)
+                arg_args, arg_kwargs = manual_arguments.get(kwarg_name, ((kwarg_name,), {}))
+                if 'default' not in arg_kwargs:
+                    arg_kwargs['default'] = default_value
+                parser.add_argument(*arg_args, **arg_kwargs)
 
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
@@ -167,12 +159,19 @@ class Task(object):
         def decorator(func):
 
             task_info = cls._get_task_info(func)
-            if 'dest' in kwargs:
-                task_info.arguments[kwargs['dest']] = (args, kwargs)
+
+            if args[0].startswith('-'):
+                # Optional
+                if 'dest' in kwargs:
+                    task_info.arguments[kwargs['dest']] = (args, kwargs)
+                else:
+                    raise AttributeError('Optional argument must provide "dest"')
             else:
-                # Register each argparse argument name for mapping function argument
-                for arg in args:
-                    task_info.arguments[arg] = (args, kwargs)
+                # Positional
+                if 'dest' in kwargs:
+                    task_info.arguments[kwargs['dest']] = (args, kwargs)
+                else:
+                    task_info.arguments[args[0]] = (args, kwargs)
 
             @functools.wraps(func)
             def wrapper(*func_args, **func_kwargs):
@@ -206,3 +205,7 @@ class Task(object):
                 func_or_task._taskr_info = _TaskInfo(func_or_task)
             return func_or_task._taskr_info
         return None
+
+    @property
+    def task_info(self):
+        return self._get_task_info(self.function)
