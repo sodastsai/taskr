@@ -77,7 +77,7 @@ class Task(object):
     # Register and execution
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, func, assigned=functools.WRAPPER_ASSIGNMENTS):
+    def __init__(self, func):
         # setup base
         if not self.parser:
             self.setup()
@@ -85,9 +85,8 @@ class Task(object):
             self.setup_action()
 
         self.function = func
-        # Keep attributes (like functools.wraps
-        for attr in assigned:
-            setattr(self, attr, getattr(func, attr))
+        # Update wrapper with function
+        functools.update_wrapper(self, func)
 
         task_info = self._get_task_info(self.function)
 
@@ -201,15 +200,10 @@ class Task(object):
 
     # noinspection PyProtectedMember
     @classmethod
-    def _get_task_info(cls, func_or_task):
-        if isinstance(func_or_task, Task):
-            return cls._get_task_info(func_or_task.function)
-
-        if callable(func_or_task):
-            if not hasattr(func_or_task, '_taskr_info'):
-                func_or_task._taskr_info = _TaskInfo(func_or_task)
-            return func_or_task._taskr_info
-        return None
+    def _get_task_info(cls, func):
+        if not hasattr(func, '_taskr_info'):
+            func._taskr_info = _TaskInfo(func)
+        return func._taskr_info
 
     @property
     def task_info(self):
