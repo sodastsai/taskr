@@ -36,6 +36,17 @@ class _TaskInfo(object):
     def function(self):
         return self.weak_function()
 
+    def add_argument(self, group, *args, **kwargs):
+        if args[0].startswith('-'):
+            # Optional
+            if 'dest' in kwargs:
+                self.arguments[kwargs['dest']] = (group, args, kwargs)
+            else:
+                raise AttributeError('Optional argument must provide "dest"')
+        else:
+            # Positional
+            self.arguments[kwargs.get('dest', args[0])] = (group, args, kwargs)
+
 
 # Task
 # ======================================================================================================================
@@ -81,16 +92,18 @@ class Task(object):
         task_info = self._get_task_info(self.function)
 
         # Register this task to argparse
-        parser = self.subparsers.add_parser(task_info.name)
-        parser.set_defaults(__instance__=self)
+        self.local_parser = self.subparsers.add_parser(task_info.name)
+        self.local_parser.set_defaults(__instance__=self)
 
         # Register arguments
         manual_arguments = task_info.arguments
+        self.argument_groups = {'*': self.local_parser}
+        # Go
         if task_info.pass_namespace:
             # Register arguments by decorator declaration
             for _ in reversed(manual_arguments):
-                arg_args, arg_kwargs = manual_arguments[_]
-                parser.add_argument(*arg_args, **arg_kwargs)
+                group, arg_args, arg_kwargs = manual_arguments[_]
+                self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
         else:
             # Register arguments by function spec
 
@@ -109,13 +122,16 @@ class Task(object):
 
             # Register
             for arg_name in args:
-                arg_args, arg_kwargs = manual_arguments.get(arg_name, ((arg_name,), {}))
-                parser.add_argument(*arg_args, **arg_kwargs)
+                group, arg_args, arg_kwargs = manual_arguments.get(arg_name, ('*', (arg_name,), {}))
+                self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
             for kwarg_name, default_value in kwargs.items():
-                arg_args, arg_kwargs = manual_arguments.get(kwarg_name, (('--' + kwarg_name.replace('_', '-'),), {}))
+                group, arg_args, arg_kwargs = manual_arguments.get(kwarg_name,
+                                                                   ('*', ('--' + kwarg_name.replace('_', '-'),), {}))
+
                 if 'default' not in arg_kwargs:
                     arg_kwargs['default'] = default_value
-                parser.add_argument(*arg_args, **arg_kwargs)
+
+                self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
 
     def __call__(self, *args, **kwargs):
         return self.function(*args, **kwargs)
@@ -155,31 +171,20 @@ class Task(object):
         return decorator
 
     @classmethod
-    def set_argument(cls, *args, **kwargs):
+    def set_group_argument(cls, group, *args, **kwargs):
         def decorator(func):
 
-            task_info = cls._get_task_info(func)
-
-            if args[0].startswith('-'):
-                # Optional
-                if 'dest' in kwargs:
-                    task_info.arguments[kwargs['dest']] = (args, kwargs)
-                else:
-                    raise AttributeError('Optional argument must provide "dest"')
-            else:
-                # Positional
-                if 'dest' in kwargs:
-                    task_info.arguments[kwargs['dest']] = (args, kwargs)
-                else:
-                    task_info.arguments[args[0]] = (args, kwargs)
+            cls._get_task_info(func).add_argument(group, *args, **kwargs)
 
             @functools.wraps(func)
             def wrapper(*func_args, **func_kwargs):
                 return func(*func_args, **func_kwargs)
-
             return wrapper
-
         return decorator
+
+    @classmethod
+    def set_argument(cls, *args, **kwargs):
+        return cls.set_group_argument('*', *args, **kwargs)
 
     @classmethod
     def pass_argparse_namespace(cls, func):
@@ -209,3 +214,15 @@ class Task(object):
     @property
     def task_info(self):
         return self._get_task_info(self.function)
+
+    def _get_argument_group(self, group):
+        if isinstance(group, tuple):
+            group_title, group_description = group
+        else:
+            group_title = group
+            group_description = None
+
+        if group_title not in self.argument_groups:
+            self.argument_groups[group_title] = self.local_parser.add_argument_group(title=group_title,
+                                                                                     description=group_description)
+        return self.argument_groups[group_title]

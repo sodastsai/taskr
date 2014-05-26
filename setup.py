@@ -18,12 +18,13 @@
 
 from distutils.core import setup
 import os
+import taskr
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
     long_description = f.read()
 
 setup(name='taskr',
-      version='0.0.9',
+      version=taskr.__version__,
       description='Python Command Line Utility',
       author='sodastsai',
       author_email='sodas2002@gmail.com',
