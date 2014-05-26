@@ -87,7 +87,7 @@ you can use ```@task.set_argument``` decorator and pass the same arguments you p
 ```
 @task
 @task.set_argument('source', help='The source where you come from', choice=('Tokyo', 'Osaka'))
-@task.set_argument('--speed', '-s', help='The speed you wanna run', type=int)
+@task.set_argument('--speed', '-s', help='The speed you wanna run', type=int, dest='speed')
 def run(source, destination, speed=42):
     print('Run from {0} to {1} by speed={2}'.format(source, destination, speed))
 ```
@@ -95,10 +95,27 @@ def run(source, destination, speed=42):
 And now you can only run from Tokyo or Osaka but cannot run from Kyoto
 Also you must run in an int value speed.
 
-Please note that the first argument of ```@task.set_argument``` must be the same as the argument name of function.
-For example, 'source' for source, '--speed' for speed, and '--buffer-length' for buffer_length if exists.
-Or taskr may register duplicate argument.
+For positional arguments, taskr matches its name and argument of function automatically.
+But for optional arguments, you must assign ```dest``` to make taskr understand which argument of function
+shoule map to.
 
+
+### ```@task.pass_argparse_namespace``` decorator
+
+If your task function has set ```pass_argparse_namespace``` by this decorator,
+then all the argument of argparse should be decalred explicitly. (i.e. taskr won't discover for you automatically)
+Also the argument passed into your task function is only the "Namespace" comes from argparse
+
+For example
+
+```
+@task
+@task.pass_argparse_namespace
+@task.set_argument('start_time')
+@task.set_argument('end_time')
+def sleep(arguments):
+    print('Sleep from {0.start_time} to {0.end_time}'.format(arguments))
+```
 
 
 ## Usage - console & Color

@@ -112,7 +112,7 @@ class Task(object):
                 arg_args, arg_kwargs = manual_arguments.get(arg_name, ((arg_name,), {}))
                 parser.add_argument(*arg_args, **arg_kwargs)
             for kwarg_name, default_value in kwargs.items():
-                arg_args, arg_kwargs = manual_arguments.get(kwarg_name, ((kwarg_name,), {}))
+                arg_args, arg_kwargs = manual_arguments.get(kwarg_name, (('--' + kwarg_name.replace('_', '-'),), {}))
                 if 'default' not in arg_kwargs:
                     arg_kwargs['default'] = default_value
                 parser.add_argument(*arg_args, **arg_kwargs)
