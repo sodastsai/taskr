@@ -143,6 +143,10 @@ class Task(object):
 
     @classmethod
     def dispatch(cls):
+        # setup base
+        if not cls.parser:
+            cls.setup()
+
         args = cls.parser.parse_args()
         if hasattr(args, '__instance__'):
             task_object = args.__instance__
