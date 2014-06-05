@@ -23,5 +23,5 @@ console = Console
 
 __all__ = [Task.__name__, Console.__name__, Color.__name__, 'task', 'console']
 
-VERSION = (0, 0, 11)
+VERSION = (0, 0, 13)
 __version__ = '.'.join(map(lambda x: str(x), VERSION))

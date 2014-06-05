@@ -53,37 +53,40 @@ class _TaskInfo(object):
 
 class Task(object):
 
-    parser = None
-    subparsers = None
-
     # Setup
     # ------------------------------------------------------------------------------------------------------------------
+
+    _parser = None
+
+    @classmethod
+    def parser(cls):
+        if not cls._parser:
+            cls.setup()
+        return cls._parser
 
     @classmethod
     def setup(cls, *args, **kwargs):
         # Argument parser
-        cls.parser = argparse.ArgumentParser(*args, **kwargs)
+        cls._parser = argparse.ArgumentParser(*args, **kwargs)
+
+    _subparsers = None
+
+    @classmethod
+    def subparsers(cls):
+        if not cls._subparsers:
+            cls.setup_action()
+        return cls._subparsers
 
     @classmethod
     def setup_action(cls, *args, **kwargs):
-        # setup parser
-        if not cls.parser:
-            cls.setup()
-
         if 'title' not in kwargs:
             kwargs['title'] = 'Action'
-        cls.subparsers = cls.parser.add_subparsers(*args, **kwargs)
+        cls._subparsers = cls.parser().add_subparsers(*args, **kwargs)
 
     # Register and execution
     # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, func):
-        # setup base
-        if not self.parser:
-            self.setup()
-        if not self.subparsers:
-            self.setup_action()
-
         self.function = func
         # Update wrapper with function
         functools.update_wrapper(self, func)
@@ -91,7 +94,7 @@ class Task(object):
         task_info = self._get_task_info(self.function)
 
         # Register this task to argparse
-        self.local_parser = self.subparsers.add_parser(task_info.name)
+        self.local_parser = self.subparsers().add_parser(task_info.name)
         self.local_parser.set_defaults(__instance__=self)
 
         # Register arguments
@@ -143,11 +146,7 @@ class Task(object):
 
     @classmethod
     def dispatch(cls):
-        # setup base
-        if not cls.parser:
-            cls.setup()
-
-        args = cls.parser.parse_args()
+        args = cls.parser().parse_args()
         if hasattr(args, '__instance__'):
             task_object = args.__instance__
             if cls._get_task_info(task_object).pass_namespace:
@@ -157,7 +156,7 @@ class Task(object):
                 del kwargs['__instance__']
                 task_object(**kwargs)
         else:
-            cls.parser.print_help()
+            cls.parser().print_help()
 
     # Decorators
     # ------------------------------------------------------------------------------------------------------------------
@@ -224,3 +223,15 @@ class Task(object):
             self.argument_groups[group_title] = self.local_parser.add_argument_group(title=group_title,
                                                                                      description=group_description)
         return self.argument_groups[group_title]
+
+    @classmethod
+    def exit(cls, status=0, message=None):
+        if not message.endswith('\n'):
+            message += '\n'
+        cls.parser().exit(status, message)
+
+    @classmethod
+    def error(cls, message):
+        if not message.endswith('\n'):
+            message += '\n'
+        cls.parser().error(message)
