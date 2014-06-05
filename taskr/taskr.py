@@ -28,7 +28,7 @@ class _TaskInfo(object):
 
     def __init__(self, func):
         self.weak_function = weakref.ref(func)
-        self.name = func.__name__
+        self.name = func.__name__.replace('_', '-')
         self.arguments = OrderedDict()
         self.pass_namespace = False
 
