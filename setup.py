@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 import os
 import taskr
 
@@ -32,4 +32,4 @@ setup(name='taskr',
       url='https://github.com/sodastsai/taskr',
       package_data={'': ['license.txt', 'README.md']},
       long_description=long_description,
-      packages=['taskr'])
+      packages=find_packages())
