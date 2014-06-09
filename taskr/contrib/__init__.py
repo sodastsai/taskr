@@ -13,15 +13,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-from .taskr import Task
-from .terminal import Console
-from .terminal import Color
-
-task = Task
-console = Console
-
-__all__ = [Task.__name__, Console.__name__, Color.__name__, 'task', 'console']
-
-VERSION = (0, 1, 0)
-__version__ = '.'.join(map(lambda x: str(x), VERSION))
