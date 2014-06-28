@@ -87,6 +87,12 @@ class Task(object):
     # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, func):
+        # instantiate object if necessary
+        if inspect.isclass(func):
+            func_class = func
+            func = func_class()
+            functools.update_wrapper(func, func_class)
+
         self.function = func
         # Update wrapper with function
         functools.update_wrapper(self, func)
