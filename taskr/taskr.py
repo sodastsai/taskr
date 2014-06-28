@@ -108,12 +108,13 @@ class Task(object):
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
         else:
             # Register arguments by function spec
-
             # Get argument spec of function
+            function_is_object = hasattr(task_info.function, '__call__')
+            func_to_inspect = function_is_object and task_info.function.__call__ or task_info.function
             try:
-                arg_spec = inspect.getfullargspec(task_info.function)
+                arg_spec = inspect.getfullargspec(func_to_inspect)
             except AttributeError:
-                arg_spec = inspect.getargspec(task_info.function)
+                arg_spec = inspect.getargspec(func_to_inspect)
             # Parse argument spec into args list and kwargs dict
             if arg_spec.defaults:
                 args = arg_spec.args[:-len(arg_spec.defaults)]
@@ -121,6 +122,9 @@ class Task(object):
             else:
                 args = arg_spec.args
                 kwargs = {}
+            # Remove 'self' of object method args
+            if function_is_object:
+                args = args[1:]
 
             # Register
             for arg_name in args:
