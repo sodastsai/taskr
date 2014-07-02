@@ -27,6 +27,15 @@ from collections import OrderedDict
 class _TaskInfo(object):
 
     def __init__(self, func):
+        if inspect.isclass(func):
+            if hasattr(func, 'taskr_instance'):
+                func = func.taskr_instance
+            else:
+                func_class = func
+                func = func_class()
+                functools.update_wrapper(func, func_class)
+                func_class.taskr_instance = func
+
         self.weak_function = weakref.ref(func)
         self.name = func.__name__.replace('_', '-').lower()
         self.arguments = OrderedDict()
@@ -87,14 +96,7 @@ class Task(object):
     # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, func):
-        # instantiate object if necessary
-        if inspect.isclass(func):
-            func_class = func
-            func = func_class()
-            functools.update_wrapper(func, func_class)
-
         self.function = func
-        # Update wrapper with function
         functools.update_wrapper(self, func)
 
         task_info = self._get_task_info(self.function)
@@ -115,8 +117,8 @@ class Task(object):
         else:
             # Register arguments by function spec
             # Get argument spec of function
-            function_is_object = hasattr(task_info.function, '__call__')
-            func_to_inspect = function_is_object and task_info.function.__call__ or task_info.function
+            self.function_is_object = hasattr(task_info.function, '__call__')
+            func_to_inspect = task_info.function.__call__ if self.function_is_object else task_info.function
             try:
                 arg_spec = inspect.getfullargspec(func_to_inspect)
             except AttributeError:
@@ -129,7 +131,7 @@ class Task(object):
                 args = arg_spec.args
                 kwargs = {}
             # Remove 'self' of object method args
-            if function_is_object:
+            if self.function_is_object:
                 args = args[1:]
 
             # Register
@@ -146,7 +148,7 @@ class Task(object):
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
 
     def __call__(self, *args, **kwargs):
-        return self.function(*args, **kwargs)
+        return (self.function() if self.function_is_object else self.function)(*args, **kwargs)
 
     def __repr__(self):
         return repr(self.function)
@@ -185,7 +187,6 @@ class Task(object):
     @classmethod
     def set_group_argument(cls, group, *args, **kwargs):
         def decorator(func):
-
             cls._get_task_info(func).add_argument(group, *args, **kwargs)
 
             @functools.wraps(func)
@@ -200,7 +201,6 @@ class Task(object):
 
     @classmethod
     def pass_argparse_namespace(cls, func):
-
         cls._get_task_info(func).pass_namespace = True
 
         @functools.wraps(func)
