@@ -148,7 +148,7 @@ class Task(object):
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
 
     def __call__(self, *args, **kwargs):
-        return (self.function() if self.function_is_object else self.function)(*args, **kwargs)
+        return self._get_task_info(self.function).function(*args, **kwargs)
 
     def __repr__(self):
         return repr(self.function)
