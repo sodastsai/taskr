@@ -29,41 +29,64 @@ class Color(object):
     MAGENTA = 5
     CYAN = 6
     WHITE = 7
+    CLEAR=-1
 
     @classmethod
-    def str(cls, message, foreground=-1, background=-1, light=False):
+    def str(self, message, foreground=-1, background=-1, light=False):
         codes = []
         if light:
-            codes.append(str(cls.LIGHT))
+            codes.append(str(self.LIGHT))
         if foreground >= 0:
-            codes.append(str(cls.FOREGROUND + foreground))
+            codes.append(str(self.FOREGROUND + foreground))
         if background >= 0:
-            codes.append(str(cls.BACKGROUND + background))
+            codes.append(str(self.BACKGROUND + background))
         return '\033[{0}m{1}\033[m'.format(';'.join(codes), message)
 
 
 class Console(object):
 
-    @classmethod
-    def error(cls, message):
-        print(Color.str('😱  {0}'.format(message), Color.RED))
+    error_prefix = '😱'
+    error_color = (Color.RED, False)
 
-    @classmethod
-    def success(cls, message):
-        print(Color.str('🍺  {0}'.format(message), Color.GREEN))
+    success_prefix = '🍺'
+    success_color = (Color.GREEN, False)
 
-    @classmethod
-    def info(cls, message):
-        print(Color.str('✈️  {0}'.format(message), Color.CYAN))
+    info_prefix = '✈️'
+    info_color = (Color.CYAN, False)
 
-    @classmethod
-    def prompt(cls, message):
-        print(Color.str('👻  {0}'.format(message), Color.MAGENTA))
+    prompt_prefix = '👻'
+    prompt_color = (Color.MAGENTA, False)
 
-    @classmethod
-    def highlight(cls, message):
-        print(Color.str('🚬  {0}'.format(message), Color.CYAN, light=True))
+    highlight_prefix = '🚬'
+    highlight_color = (Color.CYAN, True)
 
-    @classmethod
-    def show(cls, message, foreground=-1, background=-1, light=False):
-        print(Color.str(message, foreground, background, light))
+    def __init__(self, f, write_line=True):
+        self._output = f
+        self._write_line = write_line
+
+    def __getattr__(self, name):
+        if name.endswith('_color') or name.endswith('_prefix'):
+            raise AttributeError("'{0}' object has no attribute '{1}'".format(self.__class__.__name__, name))
+
+        color, light = getattr(self, '{0}_color'.format(name), (Color.CLEAR, False))
+
+        prefix = getattr(self, '{0}_prefix'.format(name), '')
+        if len(prefix)!=0:
+            prefix += '  '
+
+        def func(message, bar_width=0, bar_character='='):
+            self.show('{0}{1}'.format(prefix, message),
+                foreground=color, light=light, bar_width=bar_width, bar_character=bar_character)
+        return func
+
+    def show(self, message, foreground=-1, background=-1, light=False, bar_width=0, bar_character='='):
+        if bar_width != 0:
+            message = self.bar(message, bar_width, bar_character)
+        output_str = Color.str(message, foreground, background, light)
+        if self._write_line:
+            output_str += '\n'
+        self._output.write(output_str)
+
+    @staticmethod
+    def bar(message, width=120, character='='):
+        return message + ' ' + character * (width - (len(message) + 1))

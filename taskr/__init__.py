@@ -14,14 +14,15 @@
 # limitations under the License.
 #
 
+import sys
 from .taskr import Task
 from .terminal import Console
 from .terminal import Color
 
 task = Task
-console = Console
+console = Console(sys.stdout)
 
 __all__ = [Task.__name__, Console.__name__, Color.__name__, 'task', 'console']
 
-VERSION = (0, 1, 8)
+VERSION = (0, 1, 9)
 __version__ = '.'.join(map(lambda x: str(x), VERSION))
