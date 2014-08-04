@@ -17,6 +17,7 @@
 import argparse
 import functools
 import inspect
+import types
 import weakref
 from collections import OrderedDict
 
@@ -117,7 +118,7 @@ class Task(object):
         else:
             # Register arguments by function spec
             # Get argument spec of function
-            self.function_is_object = hasattr(task_info.function, '__call__')
+            self.function_is_object = not isinstance(task_info.function, types.FunctionType)
             func_to_inspect = task_info.function.__call__ if self.function_is_object else task_info.function
             try:
                 arg_spec = inspect.getfullargspec(func_to_inspect)
