@@ -237,7 +237,7 @@ class Task(object):
 
     @classmethod
     def exit(cls, status=0, message=None):
-        if not message.endswith('\n'):
+        if message and not message.endswith('\n'):
             message += '\n'
         cls.parser().exit(status, message)
 
