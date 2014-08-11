@@ -60,6 +60,9 @@ class Console(object):
     highlight_prefix = '🚬'
     highlight_color = (Color.CYAN, True)
 
+    warn_prefix = '🔔'
+    warn_color = (Color.YELLOW, False)
+
     def __init__(self, f, write_line=True):
         self._output = f
         self._write_line = write_line
