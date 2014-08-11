@@ -18,6 +18,7 @@ import argparse
 import functools
 import inspect
 import types
+import sys
 import weakref
 from collections import OrderedDict
 
@@ -41,6 +42,7 @@ class _TaskInfo(object):
         self.name = func.__name__.replace('_', '-').lower()
         self.arguments = OrderedDict()
         self.pass_namespace = False
+        self.has_main_func = False
 
     @property
     def function(self):
@@ -67,6 +69,7 @@ class Task(object):
     # ------------------------------------------------------------------------------------------------------------------
 
     _parser = None
+    main_func_name = None
 
     @classmethod
     def parser(cls):
@@ -105,6 +108,7 @@ class Task(object):
         # Register this task to argparse
         self.local_parser = self.subparsers().add_parser(task_info.name)
         self.local_parser.set_defaults(__instance__=self)
+        self.has_main_func = task_info.has_main_func
 
         # Register arguments
         manual_arguments = task_info.arguments
@@ -159,7 +163,11 @@ class Task(object):
 
     @classmethod
     def dispatch(cls):
-        args = cls.parser().parse_args()
+        in_args = sys.argv[1:]
+        if cls.main_func_name is not None:
+            in_args = [cls.main_func_name] + in_args
+
+        args = cls.parser().parse_args(in_args)
         if hasattr(args, '__instance__'):
             task_object = args.__instance__
             if cls._get_task_info(task_object).pass_namespace:
@@ -173,6 +181,16 @@ class Task(object):
 
     # Decorators
     # ------------------------------------------------------------------------------------------------------------------
+
+    @classmethod
+    def main(cls, func):
+        cls._get_task_info(func).has_main_func = True
+        cls.main_func_name = func.__name__
+
+        @functools.wraps(func)
+        def wrapper(*func_args, **func_kwargs):
+            return func(*func_args, **func_kwargs)
+        return wrapper
 
     @classmethod
     def set_name(cls, name):
