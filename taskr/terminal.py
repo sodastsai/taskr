@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import unicode_literals, division, absolute_import, print_function
 
 
 class Color(object):
@@ -29,17 +30,17 @@ class Color(object):
     MAGENTA = 5
     CYAN = 6
     WHITE = 7
-    CLEAR=-1
+    CLEAR = -1
 
     @classmethod
-    def str(self, message, foreground=-1, background=-1, light=False):
+    def str(cls, message, foreground=-1, background=-1, light=False):
         codes = []
         if light:
-            codes.append(str(self.LIGHT))
+            codes.append(str(cls.LIGHT))
         if foreground >= 0:
-            codes.append(str(self.FOREGROUND + foreground))
+            codes.append(str(cls.FOREGROUND + foreground))
         if background >= 0:
-            codes.append(str(self.BACKGROUND + background))
+            codes.append(str(cls.BACKGROUND + background))
         return '\033[{0}m{1}\033[m'.format(';'.join(codes), message)
 
 
@@ -75,12 +76,12 @@ class Console(object):
         color, light = getattr(self, '{0}_color'.format(name), (Color.CLEAR, False))
 
         prefix = getattr(self, '{0}_prefix'.format(name), '')
-        if len(prefix)!=0:
+        if len(prefix) != 0:
             prefix += '  '
 
         def func(message, bar_width=0, bar_character='='):
             self.show('{0}{1}'.format(prefix, message),
-                foreground=color, light=light, bar_width=bar_width, bar_character=bar_character)
+                      foreground=color, light=light, bar_width=bar_width, bar_character=bar_character)
         return func
 
     def show(self, message, foreground=-1, background=-1, light=False, bar_width=0, bar_character='='):
