@@ -23,6 +23,10 @@ import weakref
 from collections import OrderedDict
 
 
+def _task_name_from_function_name(func_name):
+    return func_name.replace('_', '-').lower()
+
+
 # Task Info
 # ======================================================================================================================
 
@@ -39,7 +43,7 @@ class _TaskInfo(object):
                 func_class.taskr_instance = func
 
         self.weak_function = weakref.ref(func)
-        self.name = func.__name__.replace('_', '-').lower()
+        self.name = _task_name_from_function_name(func.__name__)
         self.arguments = OrderedDict()
         self.pass_namespace = False
         self.has_main_func = False
@@ -69,7 +73,7 @@ class Task(object):
     # ------------------------------------------------------------------------------------------------------------------
 
     _parser = None
-    main_func_name = None
+    main_task_name = None
 
     @classmethod
     def parser(cls):
@@ -164,8 +168,8 @@ class Task(object):
     @classmethod
     def dispatch(cls):
         in_args = sys.argv[1:]
-        if cls.main_func_name is not None:
-            in_args = [cls.main_func_name] + in_args
+        if cls.main_task_name is not None:
+            in_args = [cls.main_task_name] + in_args
 
         args = cls.parser().parse_args(in_args)
         if hasattr(args, '__instance__'):
@@ -185,7 +189,7 @@ class Task(object):
     @classmethod
     def main(cls, func):
         cls._get_task_info(func).has_main_func = True
-        cls.main_func_name = func.__name__
+        cls.main_task_name = _task_name_from_function_name(func.__name__)
 
         @functools.wraps(func)
         def wrapper(*func_args, **func_kwargs):
