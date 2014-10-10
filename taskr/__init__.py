@@ -24,5 +24,5 @@ console = Console(sys.stdout)
 
 __all__ = [Task.__name__, Console.__name__, Color.__name__, 'task', 'console']
 
-VERSION = (0, 1, 16)
+VERSION = (0, 1, 17)
 __version__ = '.'.join(map(lambda x: str(x), VERSION))
