@@ -47,6 +47,7 @@ class _TaskInfo(object):
         self.arguments = OrderedDict()
         self.pass_namespace = False
         self.has_main_func = False
+        self.cleanup_func = None
 
     @property
     def function(self):
@@ -66,6 +67,9 @@ class _TaskInfo(object):
 
 # Task
 # ======================================================================================================================
+
+_current_task_object = None
+
 
 class Task(object):
 
@@ -173,7 +177,8 @@ class Task(object):
 
         args = cls.parser().parse_args(in_args)
         if hasattr(args, '__instance__'):
-            task_object = args.__instance__
+            global _current_task_object
+            _current_task_object = task_object = args.__instance__
             if cls._get_task_info(task_object).pass_namespace:
                 task_object(args)
             else:
@@ -204,6 +209,17 @@ class Task(object):
             @functools.wraps(func)
             def wrapper(*func_args, **func_kwargs):
                 return func(*func_args, **func_kwargs)
+            return wrapper
+        return decorator
+
+    @classmethod
+    def set_exit_cleanup(cls, cleanup_func):
+        def decorator(func):
+            cls._get_task_info(func).cleanup_func = cleanup_func
+
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
             return wrapper
         return decorator
 
@@ -261,6 +277,12 @@ class Task(object):
     def exit(cls, status=0, message=None):
         if message and not message.endswith('\n'):
             message += '\n'
+
+        if _current_task_object:
+            cleanup_func = cls._get_task_info(_current_task_object).cleanup_func
+            if callable(cleanup_func):
+                cleanup_func(_current_task_object)
+
         cls.parser().exit(status, message)
 
     @classmethod
