@@ -180,10 +180,12 @@ class Task(object):
             global _current_task_object
             _current_task_object = task_object = args.__instance__
             if cls._get_task_info(task_object).pass_namespace:
+                task_object.arguments = args
                 task_object(args)
             else:
                 kwargs = dict(vars(args))
                 del kwargs['__instance__']
+                task_object.arguments = kwargs
                 task_object(**kwargs)
         else:
             cls.parser().print_help()
