@@ -100,7 +100,10 @@ class Console(object):
     def bar(message, width=120, character='='):
         return message + ' ' + character * (width - (len(message) + 1))
 
-    def input(self, prompt, default=None, hint=None, validators=None, repeat_until_valid=False):
+    def input(self, prompt,
+              default=None, hint=None, validators=None, repeat_until_valid=False, task=None, leave_when_cancel=None):
+        leave_when_cancel = leave_when_cancel or bool(task)
+
         message_components = [prompt, ' ']
         if hint:
             message_components.append('({0})'.format(hint))
@@ -109,7 +112,18 @@ class Console(object):
         message = ''.join(message_components).strip() + ': '
 
         while True:
-            result = input(message)
+            try:
+                result = input(message)
+            except KeyboardInterrupt:
+                error_msg = '\nUser cancelled input.'
+                self.show(error_msg)
+                if task and leave_when_cancel:
+                    task.exit(1)
+                return None
+            # Default value
+            if not result and default:
+                result = default
+            # Validate
             if validators:
                 for validator in validators:
                     try:
@@ -118,5 +132,6 @@ class Console(object):
                         self.show(str(e))
                         result = None
                         break
+            # Return rt repeat
             if not repeat_until_valid or result:
                 return result
