@@ -116,7 +116,7 @@ class Console(object):
                 result = input(message)
             except KeyboardInterrupt:
                 error_msg = '\nUser cancelled input.'
-                self.show(error_msg)
+                self.error(error_msg)
                 if task and leave_when_cancel:
                     task.exit(1)
                 return None
@@ -129,7 +129,7 @@ class Console(object):
                     try:
                         result = validator(result)
                     except ValueError as e:
-                        self.show(str(e))
+                        self.error(str(e))
                         result = None
                         break
             # Return rt repeat
