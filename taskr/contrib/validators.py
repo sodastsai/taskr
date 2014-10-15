@@ -73,3 +73,12 @@ def regex_validator(pattern):
                 pattern if isinstance(pattern, six.string_types) else pattern.pattern))
         return value
     return validator
+
+
+def number_pair_validator(number_type, length=None, delimiter=','):
+    def validator(raw_value):
+        pairs = list(map(number_type, raw_value.split(delimiter)))
+        if length is not None and len(pairs) != length:
+            raise ValueError('The number of items in the pair is incorrect.')
+        return pairs
+    return validator
