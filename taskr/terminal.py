@@ -17,6 +17,10 @@
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
 
+import six
+# noinspection PyShadowingBuiltins
+input = six.moves.input
+
 
 class Color(object):
     LIGHT = 1
@@ -95,3 +99,24 @@ class Console(object):
     @staticmethod
     def bar(message, width=120, character='='):
         return message + ' ' + character * (width - (len(message) + 1))
+
+    def input(self, prompt, default=None, hint=None, validators=None, repeat_until_valid=False):
+        message_components = [prompt, ' ']
+        if hint:
+            message_components.append('({0})'.format(hint))
+        if default:
+            message_components.append('[{0}]'.format(default))
+        message = ''.join(message_components).strip() + ': '
+
+        while True:
+            result = input(message)
+            if validators:
+                for validator in validators:
+                    try:
+                        result = validator(result)
+                    except ValueError as e:
+                        self.show(str(e))
+                        result = None
+                        break
+            if not repeat_until_valid or result:
+                return result

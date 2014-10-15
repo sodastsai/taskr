@@ -33,6 +33,9 @@ setup(name='taskr',
       package_data={'': ['license.txt', 'README.md']},
       long_description=long_description,
       packages=find_packages(),
+      install_requires=[
+          'six>=1.8.0',
+      ],
       classifiers=[
           'Development Status :: 3 - Alpha',
           'Environment :: Console',
