@@ -18,13 +18,12 @@
 
 from setuptools import setup, find_packages
 import os
-import taskr
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
     long_description = f.read()
 
 setup(name='taskr',
-      version=taskr.__version__,
+      version='0.1.25',
       description='Python Command Line Utility',
       author='sodastsai',
       author_email='sodas2002@gmail.com',
