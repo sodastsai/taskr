@@ -17,6 +17,9 @@
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
 
+# noinspection PyUnresolvedReferences
+import readline
+
 import six
 # noinspection PyShadowingBuiltins
 input = six.moves.input
