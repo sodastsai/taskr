@@ -193,8 +193,7 @@ class Task(object):
                 try:
                     task_object(**kwargs)
                 except Exception as e:
-                    cls.error('Error: {0}'.format(e))
-                    cls.exit(1)
+                    cls.exit(status=1, message='\nError: {0}\n\n'.format(e))
         else:
             cls.parser().print_help()
 
