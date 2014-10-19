@@ -116,7 +116,7 @@ class Console(object):
 
         while True:
             try:
-                result = input(message)
+                result = input(message).strip()
             except KeyboardInterrupt:
                 self.show('')
                 error_msg = 'User cancelled input.'
