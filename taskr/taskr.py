@@ -181,12 +181,20 @@ class Task(object):
             _current_task_object = task_object = args.__instance__
             if cls._get_task_info(task_object).pass_namespace:
                 task_object.arguments = args
-                task_object(args)
+                try:
+                    task_object(args)
+                except Exception as e:
+                    cls.error('Error: {0}'.format(e))
+                    cls.exit(1)
             else:
                 kwargs = dict(vars(args))
                 del kwargs['__instance__']
                 task_object.arguments = kwargs
-                task_object(**kwargs)
+                try:
+                    task_object(**kwargs)
+                except Exception as e:
+                    cls.error('Error: {0}'.format(e))
+                    cls.exit(1)
         else:
             cls.parser().print_help()
 
