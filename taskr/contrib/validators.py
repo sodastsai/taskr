@@ -43,6 +43,15 @@ def float_validator(error_message=None):
     return custom_message_validator(float, error_message=error_message)
 
 
+def boolean_function_validator(func):
+    def _validator(raw_value):
+        if func(raw_value):
+            return raw_value
+        else:
+            raise ValueError('Validator returns false.')
+    return _validator
+
+
 def validate_boolean(raw_value):
     if isinstance(raw_value, six.string_types):
         if raw_value.lower() in ('true', 't', 'yes', 'y'):
