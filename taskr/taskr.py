@@ -169,6 +169,8 @@ class Task(object):
     # Dispatch
     # ------------------------------------------------------------------------------------------------------------------
 
+    should_raise_exceptions = False
+
     @classmethod
     def dispatch(cls):
         in_args = sys.argv[1:]
@@ -184,8 +186,11 @@ class Task(object):
                 try:
                     task_object(args)
                 except Exception as e:
-                    cls.error('Error: {0}'.format(e))
-                    cls.exit(1)
+                    if cls.should_raise_exceptions:
+                        cls._call_cleanup_func()
+                        raise
+                    else:
+                        cls.exit(status=1, message='\nError: {0}\n\n'.format(e))
             else:
                 kwargs = dict(vars(args))
                 del kwargs['__instance__']
@@ -193,7 +198,11 @@ class Task(object):
                 try:
                     task_object(**kwargs)
                 except Exception as e:
-                    cls.exit(status=1, message='\nError: {0}\n\n'.format(e))
+                    if cls.should_raise_exceptions:
+                        cls._call_cleanup_func()
+                        raise
+                    else:
+                        cls.exit(status=1, message='\nError: {0}\n\n'.format(e))
         else:
             cls.parser().print_help()
 
@@ -283,27 +292,24 @@ class Task(object):
         return self.argument_groups[group_title]
 
     @classmethod
-    def exit(cls, status=0, message=None):
-        if message and not message.endswith('\n'):
-            message += '\n'
-
+    def _call_cleanup_func(cls):
         if _current_task_object:
             cleanup_func = cls._get_task_info(_current_task_object).cleanup_func
             if callable(cleanup_func):
                 cleanup_func(_current_task_object)
 
+    @classmethod
+    def exit(cls, status=0, message=None):
+        cls._call_cleanup_func()
+        if message and not message.endswith('\n'):
+            message += '\n'
         cls.parser().exit(status, message)
 
     @classmethod
     def error(cls, message):
+        cls._call_cleanup_func()
         if not message.endswith('\n'):
             message += '\n'
-
-        if _current_task_object:
-            cleanup_func = cls._get_task_info(_current_task_object).cleanup_func
-            if callable(cleanup_func):
-                cleanup_func(_current_task_object)
-
         cls.parser().error(message)
 
     # Shared pool for tasks
