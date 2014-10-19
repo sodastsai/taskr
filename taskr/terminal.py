@@ -115,7 +115,8 @@ class Console(object):
             try:
                 result = input(message)
             except KeyboardInterrupt:
-                error_msg = '\nUser cancelled input.'
+                self.show('')
+                error_msg = 'User cancelled input.'
                 self.error(error_msg)
                 if task and leave_when_cancel:
                     task.exit(1)
