@@ -305,3 +305,6 @@ class Task(object):
                 cleanup_func(_current_task_object)
 
         cls.parser().error(message)
+
+    # Shared pool for tasks
+    pool = {}
