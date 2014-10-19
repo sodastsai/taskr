@@ -298,4 +298,10 @@ class Task(object):
     def error(cls, message):
         if not message.endswith('\n'):
             message += '\n'
+
+        if _current_task_object:
+            cleanup_func = cls._get_task_info(_current_task_object).cleanup_func
+            if callable(cleanup_func):
+                cleanup_func(_current_task_object)
+
         cls.parser().error(message)
