@@ -20,10 +20,6 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 # noinspection PyUnresolvedReferences
 import readline
 
-import six
-# noinspection PyShadowingBuiltins
-input = six.moves.input
-
 
 class Color(object):
     LIGHT = 1
@@ -114,6 +110,9 @@ class Console(object):
             message_components.append('[{0}]'.format(default))
         message = ''.join(message_components).strip() + ': '
 
+        import six
+        # noinspection PyShadowingBuiltins
+        input = six.moves.input
         while True:
             try:
                 result = input(message).strip()

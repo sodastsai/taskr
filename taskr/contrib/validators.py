@@ -17,8 +17,6 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import os
 import re
 
-import six
-
 
 def custom_message_validator(validator, error_message=None):
     def _validator(raw_value):
@@ -53,6 +51,7 @@ def boolean_function_validator(func):
 
 
 def validate_boolean(raw_value):
+    import six
     if isinstance(raw_value, six.string_types):
         if raw_value.lower() in ('true', 't', 'yes', 'y'):
             return True
@@ -75,6 +74,7 @@ def filepath_validator(is_directory=False):
 
 
 def regex_validator(pattern):
+    import six
     def validator(value):
         if not bool(re.search(pattern, value)):
             raise ValueError('{0} cannot match pattern {1}'.format(
