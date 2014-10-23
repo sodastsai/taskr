@@ -197,7 +197,7 @@ class Task(object):
                 task_object.arguments = kwargs
                 try:
                     task_object(**kwargs)
-                except Exception as e:
+                except BaseException as e:
                     if cls.should_raise_exceptions:
                         cls._call_cleanup_func()
                         raise
