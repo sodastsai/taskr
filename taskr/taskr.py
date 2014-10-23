@@ -197,7 +197,7 @@ class Task(object):
                 task_object.arguments = kwargs
                 try:
                     task_object(**kwargs)
-                except BaseException as e:
+                except (Exception, KeyboardInterrupt) as e:
                     if cls.should_raise_exceptions:
                         cls._call_cleanup_func()
                         raise
