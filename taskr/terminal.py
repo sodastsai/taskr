@@ -77,10 +77,7 @@ class Console(object):
             raise AttributeError("'{0}' object has no attribute '{1}'".format(self.__class__.__name__, name))
 
         color, light = getattr(self, '{0}_color'.format(name), (Color.CLEAR, False))
-
         prefix = getattr(self, '{0}_prefix'.format(name), '')
-        if len(prefix) != 0:
-            prefix += '  '
 
         def func(message, bar_width=0, bar_character='='):
             self.show('{0}{1}'.format(prefix, message),
