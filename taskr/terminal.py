@@ -49,22 +49,22 @@ class Color(object):
 
 class Console(object):
 
-    error_prefix = '😱'
+    error_prefix = '[x]  '
     error_color = (Color.RED, False)
 
-    success_prefix = '🍺'
+    success_prefix = '[v]  '
     success_color = (Color.GREEN, False)
 
-    info_prefix = '✈️'
+    info_prefix = '[i]  '
     info_color = (Color.CYAN, False)
 
-    prompt_prefix = '👻'
+    prompt_prefix = '[?]  '
     prompt_color = (Color.MAGENTA, False)
 
-    highlight_prefix = '🚬'
+    highlight_prefix = '[:]  '
     highlight_color = (Color.CYAN, True)
 
-    warn_prefix = '🔔'
+    warn_prefix = '[!!] '
     warn_color = (Color.YELLOW, False)
 
     def __init__(self, f, write_line=True, color=True):
