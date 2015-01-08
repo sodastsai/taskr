@@ -2,28 +2,28 @@ import plistlib
 import six
 
 
-class InfoPlist(object):
+class Plist(object):
 
     def __init__(self, file_path, mode=None):
         self.file_path = file_path
-        self.info_dict = {}
+        self.content_dict = {}
         self.mode = mode or 'r'
 
     def __getitem__(self, key):
-        if key in self.info_dict:
-            return self.info_dict[key]
+        if key in self.content_dict:
+            return self.content_dict[key]
         raise KeyError(key)
 
     def __setitem__(self, key, value):
-        self.info_dict[key] = value
+        self.content_dict[key] = value
 
     def __delitem__(self, key):
-        self.info_dict.pop(key, None)
+        self.content_dict.pop(key, None)
 
     def __enter__(self):
         if 'r' in self.mode:
             with open(self.file_path, 'rb') as f:
-                self.info_dict = plistlib.load(f) if six.PY3 else plistlib.readPlist(f)
+                self.content_dict = plistlib.load(f) if six.PY3 else plistlib.readPlist(f)
         return self
 
     # noinspection PyUnusedLocal
@@ -31,6 +31,6 @@ class InfoPlist(object):
         if 'w' in self.mode:
             with open(self.file_path, 'wb') as f:
                 if six.PY3:
-                    plistlib.dump(self.info_dict, f)
+                    plistlib.dump(self.content_dict, f)
                 else:
-                    plistlib.writePlist(self.info_dict, f)
+                    plistlib.writePlist(self.content_dict, f)
