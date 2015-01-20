@@ -15,14 +15,14 @@
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
 import sys
-from .taskr import Task
+from .taskr import TaskManager, Task
 from .terminal import Console
 from .terminal import Color
 
-task = Task
+task = TaskManager()
 console = Console(sys.stdout)
 
-__all__ = [Task.__name__, Console.__name__, Color.__name__, 'task', 'console']
+__all__ = [TaskManager.__name__, Task.__name__, Console.__name__, Color.__name__, 'task', 'console']
 
-VERSION = (0, 1, 41)
+VERSION = (0, 2, 0)
 __version__ = '.'.join(map(lambda x: str(x), VERSION))

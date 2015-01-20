@@ -1,141 +1,206 @@
-#
-# Copyright 2014 sodastsai
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-from __future__ import unicode_literals, division, absolute_import, print_function
 import argparse
-import functools
-import inspect
-import types
-import sys
-import weakref
 from collections import OrderedDict
+import inspect
+import functools
+import six
+import sys
+import types
+import weakref
 
 
-def _task_name_from_function_name(func_name):
-    return func_name.replace('_', '-').lower()
+class TaskManager(object):
 
+    def __init__(self):
+        # Argument parsers
+        self.parser = argparse.ArgumentParser()
+        self.action_subparser = self.parser.add_subparsers(title='Action')
 
-# Task Info
-# ======================================================================================================================
+        # Exception handling
+        self.should_raise_exceptions = False
 
-class _TaskInfo(object):
+        # Executing info
+        self.executing_task_object = None
+        """:type: Task"""
+        self._main_task = None
 
-    def __init__(self, func):
-        if inspect.isclass(func):
-            if hasattr(func, 'taskr_instance'):
-                func = func.taskr_instance
-            else:
-                func_class = func
-                func = func_class()
-                functools.update_wrapper(func, func_class)
-                func_class.taskr_instance = func
-
-        self.weak_function = weakref.ref(func)
-        self.name = _task_name_from_function_name(func.__name__)
-        self.arguments = OrderedDict()
-        self.pass_namespace = False
-        self.has_main_func = False
-        self.cleanup_func = None
+        self.pool = {}
 
     @property
-    def function(self):
-        return self.weak_function()
+    def main_task(self):
+        """
+        :rtype: Task
+        """
+        # noinspection PyCallingNonCallable
+        return self._main_task() if self._main_task else None
 
-    def add_argument(self, group, *args, **kwargs):
-        if args[0].startswith('-'):
-            # Optional
-            if 'dest' in kwargs:
-                self.arguments[kwargs['dest']] = (group, args, kwargs)
-            else:
-                raise AttributeError('Optional argument must provide "dest"')
+    @main_task.setter
+    def main_task(self, obj):
+        """
+        :type obj: Task
+        """
+        self._main_task = weakref.ref(obj) if obj else None
+
+    def _task_object(self, callable_obj):
+        """
+        :rtype: Task
+        """
+        if isinstance(callable_obj, Task):
+            return callable_obj
+        elif callable(callable_obj):
+            return Task(callable_obj, self)
         else:
-            # Positional
-            self.arguments[kwargs.get('dest', args[0])] = (group, args, kwargs)
+            raise ValueError('{} object is not callable'.format(callable_obj))
 
+    def _call_cleanup_func(self):
+        if self.executing_task_object:
+            self.executing_task_object.cleanup_function(self.executing_task_object)
 
-# Task
-# ======================================================================================================================
+    # Decorators -------------------------------------------------------------------------------------------------------
 
-_current_task_object = None
+    def __call__(self, callable_obj):
+        task_object = self._task_object(callable_obj)
+        task_object.setup_argparser()
+        return task_object
+
+    def pass_argparse_namespace(self, callable_obj):
+        task_object = self._task_object(callable_obj)
+        task_object.pass_argparse_namespace = True
+        return task_object
+
+    def main(self, callable_obj):
+        task_object = self._task_object(callable_obj)
+        task_object.manager.main_task = weakref.ref(task_object)
+        return task_object
+
+    def set_name(self, task_name):
+        def wrapper(callable_obj):
+            task_object = self._task_object(callable_obj)
+            task_object.name = task_name
+            return task_object
+        return wrapper
+
+    def set_exit_cleanup(self, cleanup_func):
+        def wrapper(callable_obj):
+            task_object = self._task_object(callable_obj)
+            task_object.cleanup_function = cleanup_func
+            return task_object
+        return wrapper
+
+    def set_group_argument(self, group, *args, **kwargs):
+        def wrapper(callable_obj):
+            task_object = self._task_object(callable_obj)
+
+            if args[0].startswith('-'):
+                # Optional
+                dest = kwargs.get('dest', None)
+                if not dest:
+                    dest = args[0]
+                    """:type: str"""
+                    while dest.startswith('-'):
+                        dest = dest[1:]
+                    dest = dest.replace('-', '_')
+                task_object.manual_arguments[dest] = (group, args, kwargs)
+            else:
+                # Positional
+                task_object.manual_arguments[kwargs.get('dest', args[0])] = (group, args, kwargs)
+
+            return task_object
+        return wrapper
+
+    def set_argument(self, *args, **kwargs):
+        return self.set_group_argument('*', *args, **kwargs)
+
+    # Dispatch ---------------------------------------------------------------------------------------------------------
+
+    def dispatch(self):
+        # Setup action name if manager has main task
+        in_args = sys.argv[1:]
+        if self.main_task:  # main_task is a weak reference to task
+            in_args = [self.main_task().name] + in_args
+
+        args = self.parser.parse_args(in_args)
+        if hasattr(args, '__instance__'):
+            task_object = args.__instance__
+            """:type: Task"""
+            self.executing_task_object = task_object
+
+            if task_object.pass_argparse_namespace:
+                task_object.arguments = args
+                call_args = (args,)
+                call_kwargs = {}
+            else:
+                kwargs = dict(vars(args))
+                kwargs.pop('__instance__')
+                task_object.arguments = kwargs
+                call_args = ()
+                call_kwargs = kwargs
+
+            try:
+                task_object(*call_args, **call_kwargs)
+            except (Exception, KeyboardInterrupt) as e:
+                if self.should_raise_exceptions:
+                    self._call_cleanup_func()
+                    raise
+                else:
+                    self.exit(status=1, message='Error: {}\n'.format(e))
+        else:
+            self.parser.print_help()
+
+    # Error ------------------------------------------------------------------------------------------------------------
+
+    def exit(self, status=0, message=None):
+        self._call_cleanup_func()
+        if message and not message.endswith('\n'):
+            message += '\n'
+        self.parser.exit(status, message)
+
+    def error(self, message):
+        self._call_cleanup_func()
+        if not message.endswith('\n'):
+            message += '\n'
+        self.parser.error(message)
 
 
 class Task(object):
 
-    # Setup
-    # ------------------------------------------------------------------------------------------------------------------
+    def __init__(self, callable_obj, manager):
+        """
+        :type callable_obj: callable
+        :type manager: TaskManager
+        """
+        self.callable = callable_obj
+        functools.update_wrapper(self, self.callable)
+        self.callable_is_object = not isinstance(self.callable, types.FunctionType)
+        self.name = self.callable.__name__.replace('_', '-').lower()
+        self.arguments = {}
 
-    _parser = None
-    main_task_name = None
+        self.manual_arguments = OrderedDict()
+        self.pass_argparse_namespace = False
+        self.cleanup_function = lambda x: None
 
-    @classmethod
-    def parser(cls):
-        if not cls._parser:
-            cls.setup()
-        return cls._parser
+        self.manager = manager
+        self.parser = None
+        """:type: argparse.ArgumentParser"""
+        self.argument_groups = None
 
-    @classmethod
-    def setup(cls, *args, **kwargs):
-        # Argument parser
-        cls._parser = argparse.ArgumentParser(*args, **kwargs)
+    def __call__(self, *args, **kwargs):
+        self.callable(*args, **kwargs)
 
-    _subparsers = None
+    def setup_argparser(self):
+        self.parser = self.manager.action_subparser.add_parser(self.name)
+        self.parser.set_defaults(__instance__=self)
+        self.argument_groups = {'*': self.parser}
 
-    @classmethod
-    def subparsers(cls):
-        if not cls._subparsers:
-            cls.setup_action()
-        return cls._subparsers
-
-    @classmethod
-    def setup_action(cls, *args, **kwargs):
-        if 'title' not in kwargs:
-            kwargs['title'] = 'Action'
-        cls._subparsers = cls.parser().add_subparsers(*args, **kwargs)
-
-    # Register and execution
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def __init__(self, func):
-        self.function = func
-        functools.update_wrapper(self, func)
-
-        task_info = self._get_task_info(self.function)
-
-        # Register this task to argparse
-        self.local_parser = self.subparsers().add_parser(task_info.name)
-        self.local_parser.set_defaults(__instance__=self)
-        self.has_main_func = task_info.has_main_func
-
-        # Register arguments
-        manual_arguments = task_info.arguments
-        self.argument_groups = {'*': self.local_parser}
-        # Go
-        if task_info.pass_namespace:
+        if self.pass_argparse_namespace:
             # Register arguments by decorator declaration
-            for _ in reversed(manual_arguments):
-                group, arg_args, arg_kwargs = manual_arguments[_]
+            for _ in reversed(self.manual_arguments):
+                group, arg_args, arg_kwargs = self.manual_arguments[_]
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
         else:
             # Register arguments by function spec
             # Get argument spec of function
-            self.function_is_object = not isinstance(task_info.function, types.FunctionType)
-            func_to_inspect = task_info.function.__call__ if self.function_is_object else task_info.function
-            try:
-                arg_spec = inspect.getfullargspec(func_to_inspect)
-            except AttributeError:
-                arg_spec = inspect.getargspec(func_to_inspect)
+            func_to_inspect = self.callable.__call__ if self.callable_is_object else self.callable
+            arg_spec = (inspect.getfullargspec if six.PY3 else inspect.getargspec)(func_to_inspect)
             # Parse argument spec into args list and kwargs dict
             if arg_spec.defaults:
                 args = arg_spec.args[:-len(arg_spec.defaults)]
@@ -144,142 +209,29 @@ class Task(object):
                 args = arg_spec.args
                 kwargs = {}
             # Remove 'self' of object method args
-            if self.function_is_object:
+            if self.callable_is_object:
                 args = args[1:]
 
             # Register
             for arg_name in args:
-                group, arg_args, arg_kwargs = manual_arguments.get(arg_name, ('*', (arg_name,), {}))
+                group, arg_args, arg_kwargs = self.manual_arguments.get(arg_name, ('*', (arg_name,), {}))
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
             for kwarg_name, default_value in kwargs.items():
-                group, arg_args, arg_kwargs = manual_arguments.get(kwarg_name,
-                                                                   ('*', ('--' + kwarg_name.replace('_', '-'),), {}))
+                group, arg_args, arg_kwargs = self.manual_arguments.get(kwarg_name,
+                                                                        ('*',
+                                                                         ('--' + kwarg_name.replace('_', '-'),),
+                                                                         {}))
 
                 if 'default' not in arg_kwargs:
                     arg_kwargs['default'] = default_value
 
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
 
-    def __call__(self, *args, **kwargs):
-        return self._get_task_info(self.function).function(*args, **kwargs)
-
-    def __repr__(self):
-        return repr(self.function)
-
-    # Dispatch
-    # ------------------------------------------------------------------------------------------------------------------
-
-    should_raise_exceptions = False
-
-    @classmethod
-    def dispatch(cls):
-        in_args = sys.argv[1:]
-        if cls.main_task_name is not None:
-            in_args = [cls.main_task_name] + in_args
-
-        args = cls.parser().parse_args(in_args)
-        if hasattr(args, '__instance__'):
-            global _current_task_object
-            _current_task_object = task_object = args.__instance__
-            if cls._get_task_info(task_object).pass_namespace:
-                task_object.arguments = args
-                try:
-                    task_object(args)
-                except Exception as e:
-                    if cls.should_raise_exceptions:
-                        cls._call_cleanup_func()
-                        raise
-                    else:
-                        cls.exit(status=1, message='\nError: {0}\n\n'.format(e))
-            else:
-                kwargs = dict(vars(args))
-                del kwargs['__instance__']
-                task_object.arguments = kwargs
-                try:
-                    task_object(**kwargs)
-                except (Exception, KeyboardInterrupt) as e:
-                    if cls.should_raise_exceptions:
-                        cls._call_cleanup_func()
-                        raise
-                    else:
-                        cls.exit(status=1, message='\nError: {0}\n\n'.format(e))
-        else:
-            cls.parser().print_help()
-
-    # Decorators
-    # ------------------------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def main(cls, func):
-        cls._get_task_info(func).has_main_func = True
-        cls.main_task_name = _task_name_from_function_name(func.__name__)
-
-        @functools.wraps(func)
-        def wrapper(*func_args, **func_kwargs):
-            return func(*func_args, **func_kwargs)
-        return wrapper
-
-    @classmethod
-    def set_name(cls, name):
-        def decorator(func):
-            cls._get_task_info(func).name = name
-
-            @functools.wraps(func)
-            def wrapper(*func_args, **func_kwargs):
-                return func(*func_args, **func_kwargs)
-            return wrapper
-        return decorator
-
-    @classmethod
-    def set_exit_cleanup(cls, cleanup_func):
-        def decorator(func):
-            cls._get_task_info(func).cleanup_func = cleanup_func
-
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
-
-    @classmethod
-    def set_group_argument(cls, group, *args, **kwargs):
-        def decorator(func):
-            cls._get_task_info(func).add_argument(group, *args, **kwargs)
-
-            @functools.wraps(func)
-            def wrapper(*func_args, **func_kwargs):
-                return func(*func_args, **func_kwargs)
-            return wrapper
-        return decorator
-
-    @classmethod
-    def set_argument(cls, *args, **kwargs):
-        return cls.set_group_argument('*', *args, **kwargs)
-
-    @classmethod
-    def pass_argparse_namespace(cls, func):
-        cls._get_task_info(func).pass_namespace = True
-
-        @functools.wraps(func)
-        def wrapper(*func_args, **func_kwargs):
-            return func(*func_args, **func_kwargs)
-        return wrapper
-
-    # Utils
-    # ------------------------------------------------------------------------------------------------------------------
-
-    # noinspection PyProtectedMember
-    @classmethod
-    def _get_task_info(cls, func):
-        if not hasattr(func, '_taskr_info'):
-            func._taskr_info = _TaskInfo(func)
-        return func._taskr_info
-
-    @property
-    def task_info(self):
-        return self._get_task_info(self.function)
-
     def _get_argument_group(self, group):
+        """
+        :type group: str
+        :rtype: argparse.ArgumentParser
+        """
         if isinstance(group, tuple):
             group_title, group_description = group
         else:
@@ -287,30 +239,6 @@ class Task(object):
             group_description = None
 
         if group_title not in self.argument_groups:
-            self.argument_groups[group_title] = self.local_parser.add_argument_group(title=group_title,
-                                                                                     description=group_description)
+            self.argument_groups[group_title] = self.parser.add_argument_group(title=group_title,
+                                                                               description=group_description)
         return self.argument_groups[group_title]
-
-    @classmethod
-    def _call_cleanup_func(cls):
-        if _current_task_object:
-            cleanup_func = cls._get_task_info(_current_task_object).cleanup_func
-            if callable(cleanup_func):
-                cleanup_func(_current_task_object)
-
-    @classmethod
-    def exit(cls, status=0, message=None):
-        cls._call_cleanup_func()
-        if message and not message.endswith('\n'):
-            message += '\n'
-        cls.parser().exit(status, message)
-
-    @classmethod
-    def error(cls, message):
-        cls._call_cleanup_func()
-        if not message.endswith('\n'):
-            message += '\n'
-        cls.parser().error(message)
-
-    # Shared pool for tasks
-    pool = {}
