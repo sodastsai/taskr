@@ -14,9 +14,35 @@
 # limitations under the License.
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
+import re
 
 
 def number(val):
     float_val = float(val)
     int_val = int(float_val)
     return int_val if int_val == float_val else float_val
+
+
+_underscore_prefix_letter_pattern = re.compile(r'_([a-z])')
+
+
+def camelcase(snakecase_string, capitalize_head=False):
+    """
+    :type snakecase_string: str
+    :rtype: str
+    """
+    result = _underscore_prefix_letter_pattern.sub(lambda x: x.group(1).upper(), snakecase_string)
+    if capitalize_head:
+        result = result[0].upper() + result[1:]
+    return result
+
+
+_uppercase_letter_pattern = re.compile(r'([A-Z])')
+
+
+def snakecase(camelcase_string):
+    """
+    :type camelcase_string: str
+    :rtype: str
+    """
+    return _uppercase_letter_pattern.sub(lambda x: ('_' if x.start() else '') + x.group(0), camelcase_string).lower()
