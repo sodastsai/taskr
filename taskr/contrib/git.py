@@ -21,24 +21,50 @@ from .system import run
 # Ref: http://stackoverflow.com/questions/2657935/checking-for-a-dirty-index-or-untracked-files-with-git
 # Ref: https://www.kernel.org/pub/software/scm/git/docs/git-status.html
 
-def is_clean(source_root):
-    """
-    :type source_root: str
-    :rtype: bool
-    """
-    return len(status(source_root)) == 0
+class GitRepo(object):
 
+    def __init__(self, source_root):
+        self._source_root = source_root
+        """:type: str"""
 
-def status(source_root):
-    """
-    :type source_root: str
-    :rtype: OrderedDict[str, str]
-    """
-    stdout, stderr = run('cd {} && git status --porcelain'.format(source_root))
-    if stderr:
-        raise ValueError('"{}" is not a git repository'.format(source_root))
-    result = OrderedDict()
-    for stdout_line in stdout.split('\n'):
-        if stdout_line:
-            result[stdout_line[2:].strip()] = stdout_line[:2]
-    return result
+    @property
+    def source_root(self):
+        return self._source_root
+
+    def _run_git_command(self, command, capture_output=True, use_shell=False):
+        """
+        :type command: str
+        :type capture_output: bool
+        :type use_shell: bool
+        :rtype: str
+        """
+        stdout, stderr = run('cd {} && {}'.format(self.source_root, command),
+                             capture_output=capture_output, use_shell=use_shell)
+        if stderr:
+            raise ValueError('"{}" is not a git repository'.format(self.source_root))
+        return stdout
+
+    @property
+    def is_clean(self):
+        """
+        :rtype: bool
+        """
+        return len(self.status) == 0
+
+    @property
+    def status(self):
+        """
+        :rtype: OrderedDict[str, str]
+        """
+        result = OrderedDict()
+        for stdout_line in self._run_git_command('git status --porcelain').split('\n'):
+            if stdout_line:
+                result[stdout_line[2:].strip()] = stdout_line[:2]
+        return result
+
+    @property
+    def current_branch(self):
+        """
+        :rtype: str
+        """
+        return self._run_git_command('git branch | grep "*" | awk \'{print $2}\'')

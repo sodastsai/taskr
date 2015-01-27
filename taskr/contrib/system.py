@@ -33,6 +33,12 @@ os_info = _OSInfo()
 
 
 def run(command, capture_output=True, use_shell=False):
+    """
+    :type command: str
+    :type capture_output: bool
+    :type use_shell: bool
+    :rtype: (str, str)
+    """
     use_shell = '&&' in command or '||' in command or use_shell
     stdout, stderr = subprocess.Popen(command if use_shell else shlex.split(command),
                                       stdout=subprocess.PIPE if capture_output else None,
