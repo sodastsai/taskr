@@ -85,7 +85,7 @@ class TaskManager(object):
 
     def main(self, callable_obj):
         task_object = self._task_object(callable_obj)
-        task_object.manager.main_task = weakref.ref(task_object)
+        task_object.manager.main_task = task_object
         return task_object
 
     def set_name(self, task_name):
@@ -132,7 +132,7 @@ class TaskManager(object):
         # Setup action name if manager has main task
         in_args = sys.argv[1:]
         if self.main_task:  # main_task is a weak reference to task
-            in_args = [self.main_task().name] + in_args
+            in_args = [self.main_task.name] + in_args
 
         args = self.parser.parse_args(in_args)
         if hasattr(args, '__instance__'):
