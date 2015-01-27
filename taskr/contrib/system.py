@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
+import shlex
+import subprocess
 import sys
 
 
@@ -28,3 +30,12 @@ class _OSInfo(object):
         return sys.platform.startswith('linux')
 
 os_info = _OSInfo()
+
+
+def run(command, capture_output=True, use_shell=False):
+    use_shell = '&&' in command or '||' in command or use_shell
+    stdout, stderr = subprocess.Popen(command if use_shell else shlex.split(command),
+                                      stdout=subprocess.PIPE if capture_output else None,
+                                      stderr=subprocess.PIPE if capture_output else None,
+                                      shell=use_shell).communicate()
+    return stdout.decode('utf-8').strip(), stderr.decode('utf-8').strip()
