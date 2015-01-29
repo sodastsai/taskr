@@ -45,3 +45,13 @@ def run(command, capture_output=True, use_shell=False):
                                       stderr=subprocess.PIPE if capture_output else None,
                                       shell=use_shell).communicate()
     return stdout.decode('utf-8').strip(), stderr.decode('utf-8').strip()
+
+
+def has_command(command):
+    """
+    test wheather a command exists in current $PATH or not.
+    :type command: str
+    :rtype: bool
+    """
+    stdout, _ = run('which {}'.format(command))
+    return len(stdout) != 0
