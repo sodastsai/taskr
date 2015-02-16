@@ -112,9 +112,9 @@ class Console(object):
         leave_when_cancel = leave_when_cancel or bool(task)
 
         message_components = [prompt, ' ']
-        if hint:
+        if hint is not None:
             message_components.append('({0})'.format(hint))
-        if default:
+        if default is not None:
             message_components.append('[{0}]'.format(default))
         message = ''.join(message_components).strip() + ': '
 
@@ -132,7 +132,7 @@ class Console(object):
                     task.exit(1)
                 return None
             # Default value
-            if not result and default:
+            if (result is None or len(result) == 0) and default is not None:
                 result = default
             # Validate
             if validators:
@@ -144,5 +144,5 @@ class Console(object):
                         result = None
                         break
             # Return rt repeat
-            if not repeat_until_valid or result:
+            if not repeat_until_valid or result is not None:
                 return result
