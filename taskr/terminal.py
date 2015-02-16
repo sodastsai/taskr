@@ -14,9 +14,17 @@
 # limitations under the License.
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
-
-# noinspection PyUnresolvedReferences
+import glob
 import readline
+
+
+# Setup readline for path auto-complete
+def path_complete(text, state):
+    return (glob.glob(text+'*')+[None])[state]
+
+readline.set_completer_delims(' \t\n;')
+readline.parse_and_bind("tab: complete")
+readline.set_completer(path_complete)
 
 
 class Color(object):
