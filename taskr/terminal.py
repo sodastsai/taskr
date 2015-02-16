@@ -15,11 +15,16 @@
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
 import glob
+import os
 import readline
 
 
 # Setup readline for path auto-complete
 def path_complete(text, state):
+    if '~' in text:
+        if text == '~':
+            text += '/'
+        text = os.path.expanduser(text)
     return (glob.glob(text+'*')+[None])[state]
 
 readline.set_completer_delims(' \t\n;')
