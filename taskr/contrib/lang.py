@@ -18,6 +18,37 @@ import functools
 
 
 def lazy_property(func):
+    """
+    >>> def add(i, j):
+    ...     print('add called')
+    ...     return i + j
+    ...
+    >>> class K(object):
+    ...
+    ...     @lazy_property
+    ...     def lazy_number(self):
+    ...         return add(1, 1)
+    ...
+    ...     @property
+    ...     def number(self):
+    ...         return add(1, 1)
+    ...
+    >>> k = K()
+    >>> k.lazy_number
+    add called
+    2
+    >>> k.lazy_number
+    2
+    >>> k.number
+    add called
+    2
+    >>> k.number
+    add called
+    2
+
+    :param func: types.FunctionType
+    :return: types.FunctionType
+    """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         instance = args[0]
