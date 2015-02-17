@@ -48,6 +48,10 @@ class Color(object):
 
     @classmethod
     def str(cls, message, foreground=-1, background=-1, light=False):
+        return '{}{}{}'.format(cls.head(foreground, background, light), message, cls.tail)
+
+    @classmethod
+    def head(cls, foreground=-1, background=-1, light=False):
         codes = []
         if light:
             codes.append(str(cls.LIGHT))
@@ -55,7 +59,9 @@ class Color(object):
             codes.append(str(cls.FOREGROUND + foreground))
         if background >= 0:
             codes.append(str(cls.BACKGROUND + background))
-        return '\033[{0}m{1}\033[m'.format(';'.join(codes), message)
+        return '\033[{}m'.format(';'.join(codes))
+
+    tail = '\033[m'
 
 
 class Console(object):
