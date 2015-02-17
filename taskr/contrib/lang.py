@@ -15,6 +15,7 @@
 #
 
 import functools
+from importlib import import_module
 
 
 def lazy_property(func):
@@ -59,3 +60,10 @@ def lazy_property(func):
             setattr(instance, member_name, result)
         return result
     return property(wrapper)
+
+
+def import_string(symbol_path):
+    symbol_components = symbol_path.split('.')
+    symbol = symbol_components[-1]
+    symbol_module = '.'.join(symbol_components[:-1])
+    return getattr(import_module(symbol_module), symbol)
