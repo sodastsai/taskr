@@ -42,6 +42,14 @@ class TaskManager(object):
         self.pool = {}
 
     @property
+    def help_text(self):
+        return self.parser.epilog
+
+    @help_text.setter
+    def help_text(self, help_text):
+        self.parser.epilog = help_text
+
+    @property
     def main_task(self):
         """
         :rtype: Task
@@ -136,6 +144,13 @@ class TaskManager(object):
             return task_object
         return wrapper
 
+    def help(self, help_text):
+        def wrapper(callable_obj):
+            task_object = self._task_object(callable_obj)
+            task_object.help_text = help_text
+            return task_object
+        return wrapper
+
     # Dispatch ---------------------------------------------------------------------------------------------------------
 
     def dispatch(self):
@@ -210,12 +225,13 @@ class Task(object):
         """:type: argparse.ArgumentParser"""
         self.argument_groups = None
         self.aliases = []
+        self.help_text = None
 
     def __call__(self, *args, **kwargs):
         self.callable(*args, **kwargs)
 
     def setup_argparser(self):
-        self.parser = self.manager.action_subparser.add_parser(self.name, aliases=self.aliases)
+        self.parser = self.manager.action_subparser.add_parser(self.name, aliases=self.aliases, help=self.help_text)
         self.parser.set_defaults(__instance__=self)
         self.argument_groups = {'*': self.parser}
 
