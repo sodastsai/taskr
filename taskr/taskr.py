@@ -74,6 +74,9 @@ class TaskManager(object):
     # Decorators -------------------------------------------------------------------------------------------------------
 
     def __call__(self, callable_obj):
+        """
+        :rtype: Task
+        """
         task_object = self._task_object(callable_obj)
         task_object.setup_argparser()
         return task_object
@@ -126,6 +129,13 @@ class TaskManager(object):
     def set_argument(self, *args, **kwargs):
         return self.set_group_argument('*', *args, **kwargs)
 
+    def alias(self, name):
+        def wrapper(callable_obj):
+            task_object = self._task_object(callable_obj)
+            task_object.aliases.append(name)
+            return task_object
+        return wrapper
+
     # Dispatch ---------------------------------------------------------------------------------------------------------
 
     def dispatch(self):
@@ -134,6 +144,7 @@ class TaskManager(object):
         if self.main_task:  # main_task is a weak reference to task
             in_args = [self.main_task.name] + in_args
 
+        # Parse argument
         args = self.parser.parse_args(in_args)
         if hasattr(args, '__instance__'):
             task_object = args.__instance__
@@ -198,12 +209,13 @@ class Task(object):
         self.parser = None
         """:type: argparse.ArgumentParser"""
         self.argument_groups = None
+        self.aliases = []
 
     def __call__(self, *args, **kwargs):
         self.callable(*args, **kwargs)
 
     def setup_argparser(self):
-        self.parser = self.manager.action_subparser.add_parser(self.name)
+        self.parser = self.manager.action_subparser.add_parser(self.name, aliases=self.aliases)
         self.parser.set_defaults(__instance__=self)
         self.argument_groups = {'*': self.parser}
 
