@@ -111,7 +111,9 @@ class Console(object):
 
     @staticmethod
     def bar(message, width=120, character='='):
-        return message + ' ' + character * (width - (len(message) + 1))
+        if message:
+            message += ' '
+        return message + character * (width - (len(message) + 1))
 
     def input(self, prompt,
               default=None, hint=None, validators=None, repeat_until_valid=False, task=None, leave_when_cancel=None):
