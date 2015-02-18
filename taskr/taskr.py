@@ -231,7 +231,12 @@ class Task(object):
         self.callable(*args, **kwargs)
 
     def setup_argparser(self):
-        self.parser = self.manager.action_subparser.add_parser(self.name, aliases=self.aliases, help=self.help_text)
+        add_parser_kwargs = {}
+        if six.PY3:
+            add_parser_kwargs['aliases'] = self.aliases
+        if self.help_text:
+            add_parser_kwargs['help'] = self.help_text
+        self.parser = self.manager.action_subparser.add_parser(self.name, **add_parser_kwargs)
         self.parser.set_defaults(__instance__=self)
         self.argument_groups = {'*': self.parser}
 
