@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Copyright 2014-2015 sodastsai
 #
@@ -22,6 +23,8 @@ from taskr import task
 @task.set_group_argument('places', 'destination')
 @task.set_argument('--speed', '-s', help='The speed you wanna run', type=int, dest='speed')
 def run(source, destination, vehicle, speed=42, step_size=1):
+    if speed < 0:
+        raise ValueError('speed should be a postive number.')
     print('Run from {0} to {1} by vehicle={4} speed={2} and step={3}'
           .format(source, destination, speed, step_size, vehicle))
 

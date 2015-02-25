@@ -22,6 +22,7 @@ import six
 import sys
 import types
 import weakref
+from .terminal import Color, Console
 
 
 class TaskManager(object):
@@ -190,16 +191,20 @@ class TaskManager(object):
 
     # Error ------------------------------------------------------------------------------------------------------------
 
-    def exit(self, status=0, message=None):
+    def exit(self, status=0, message=None, no_color=False):
         self._call_cleanup_func()
         if message and not message.endswith('\n'):
             message += '\n'
+        if not no_color:
+            message = Color.str(message, foreground=Console.error_color[0], light=Console.error_color[1])
         self.parser.exit(status, message)
 
-    def error(self, message):
+    def error(self, message, no_color=False):
         self._call_cleanup_func()
         if not message.endswith('\n'):
             message += '\n'
+        if not no_color:
+            message = Color.str(message, foreground=Console.error_color[0], light=Console.error_color[1])
         self.parser.error(message)
 
 
