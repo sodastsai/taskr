@@ -46,3 +46,23 @@ def snakecase(camelcase_string):
     :rtype: str
     """
     return _uppercase_letter_pattern.sub(lambda x: ('_' if x.start() else '') + x.group(0), camelcase_string).lower()
+
+
+_quote_pattern = re.compile(r'(["\'])', flags=re.MULTILINE)
+_escaped_quote_pattern = re.compile(r'\\(["\'])', flags=re.MULTILINE)
+
+
+def escape_quote(string):
+    """
+    :type string: str
+    :rtype: str
+    """
+    return _quote_pattern.sub(r'\\\g<1>', string)
+
+
+def unescape_quote(string):
+    """
+    :type string: str
+    :rtype: str
+    """
+    return _escaped_quote_pattern.sub(r'\g<1>', string)
