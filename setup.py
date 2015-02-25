@@ -23,7 +23,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
     long_description = f.read()
 
 setup(name='taskr',
-      version='0.2.14',
+      version='0.2.14.1',
       description='Python Command Line Utility',
       author='sodastsai',
       author_email='sodas2002@gmail.com',
