@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2014 sodastsai
+# Copyright 2014-2015 sodastsai
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import unicode_literals, division, absolute_import, print_function
 
 from setuptools import setup, find_packages
 import os
@@ -34,6 +35,7 @@ setup(name='taskr',
       packages=find_packages(),
       install_requires=[
           'six>=1.8.0',
+          'requests>=2.5',
       ],
       classifiers=[
           'Development Status :: 3 - Alpha',
