@@ -35,7 +35,6 @@ setup(name='taskr',
       packages=find_packages(),
       install_requires=[
           'six>=1.8.0',
-          'requests>=2.5',
       ],
       classifiers=[
           'Development Status :: 3 - Alpha',

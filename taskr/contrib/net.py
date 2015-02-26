@@ -14,15 +14,25 @@
 # limitations under the License.
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
-import requests
-from requests.exceptions import ConnectionError
+import json
+import six
 
 
 def get_ip():
     """
     :rtype: str
     """
+    urlopen = six.moves.urllib.request.urlopen
+    # noinspection PyPep8Naming
+    URLError = six.moves.urllib.error.URLError
     try:
-        return requests.get('http://httpbin.org/ip').json()['origin']
-    except (ValueError, KeyError, ConnectionError):
+        return json.loads(urlopen('http://httpbin.org/ip').read().decode('utf-8'))['origin']
+    except (ValueError, KeyError, URLError):
         return None
+
+
+def network_available():
+    """
+    :rtype: bool
+    """
+    return get_ip() is not None
