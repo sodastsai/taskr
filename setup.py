@@ -24,13 +24,13 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
     long_description = f.read()
 
 setup(name='taskr',
-      version='0.2.15.1',
+      version='0.2.15.2',
       description='Python Command Line Utility',
       author='sodastsai',
       author_email='sodas2002@gmail.com',
       license='Apache License Version 2.0',
       url='https://github.com/sodastsai/taskr',
-      package_data={'taskr': ['license.txt', 'README.md']},
+      package_data={'taskr': ['*.txt', '*.md']},
       long_description=long_description,
       packages=find_packages(),
       install_requires=[
