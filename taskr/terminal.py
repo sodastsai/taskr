@@ -116,13 +116,19 @@ class Console(object):
         return message + character * (width - (len(message) + 1))
 
     def input(self, prompt,
-              default=None, hint=None, validators=None, repeat_until_valid=False, task=None, leave_when_cancel=None):
+              hint=None, validators=None, repeat_until_valid=False, task=None, leave_when_cancel=None, **kwargs):
+        """
+        :param default:
+        """
+        has_default = 'default' in kwargs
+        default = kwargs.get('default', None)
+
         leave_when_cancel = leave_when_cancel or bool(task)
 
         message_components = [prompt, ' ']
         if hint is not None:
             message_components.append('({0})'.format(hint))
-        if default is not None:
+        if has_default:
             message_components.append('[{0}]'.format(default))
         message = ''.join(message_components).strip() + ': '
 
@@ -130,6 +136,7 @@ class Console(object):
         # noinspection PyShadowingBuiltins
         input = six.moves.input
         while True:
+            has_result = True
             try:
                 result = input(message).strip()
             except KeyboardInterrupt:
@@ -140,7 +147,7 @@ class Console(object):
                     task.exit(1)
                 return None
             # Default value
-            if (result is None or len(result) == 0) and default is not None:
+            if (result is None or len(result) == 0) and has_default:
                 result = default
             # Validate
             if validators:
@@ -148,9 +155,12 @@ class Console(object):
                     try:
                         result = validator(result)
                     except ValueError as e:
-                        self.error(str(e))
-                        result = None
+                        has_result = False
+                        if has_default:
+                            result = default
+                        else:
+                            self.error(str(e))
                         break
             # Return rt repeat
-            if not repeat_until_valid or result is not None:
+            if not repeat_until_valid or has_result:
                 return result

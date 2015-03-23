@@ -20,24 +20,20 @@ import re
 
 def custom_message_validator(validator, error_message=None):
     def _validator(raw_value):
-        exception = None
         try:
-            value = validator(raw_value)
+            return validator(raw_value)
         except ValueError as e:
-            value = None
-            exception = e
-        if value:
-            return value
-        else:
-            raise ValueError(error_message) if error_message else exception
+            if error_message:
+                e.args = (error_message,)
+            raise
     return _validator
 
 
-def integer_validator(error_message=None):
+def integer_validator(error_message='value is not an integer'):
     return custom_message_validator(int, error_message=error_message)
 
 
-def float_validator(error_message=None):
+def float_validator(error_message='value is not a float'):
     return custom_message_validator(float, error_message=error_message)
 
 
@@ -75,6 +71,7 @@ def filepath_validator(is_directory=False):
 
 def regex_validator(pattern):
     import six
+
     def validator(value):
         if not bool(re.search(pattern, value)):
             raise ValueError('{0} cannot match pattern {1}'.format(
