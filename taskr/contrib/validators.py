@@ -81,10 +81,12 @@ def regex_validator(pattern):
     return validator
 
 
-def number_pair_validator(number_type, length=None, delimiter=','):
+def number_pair_validator(number_type, length=None, delimiter=',',
+                          error_message_not_number=None, error_message_list_count=None):
     def validator(raw_value):
-        pairs = list(map(number_type, raw_value.split(delimiter)))
+        number_validator = custom_message_validator(number_type, error_message=error_message_not_number)
+        pairs = list(map(lambda x: number_validator(x.strip()), raw_value.split(delimiter)))
         if length is not None and len(pairs) != length:
-            raise ValueError('The number of items in the pair is incorrect.')
+            raise ValueError(error_message_list_count or 'The number of items in the pair is incorrect.')
         return pairs
     return validator
