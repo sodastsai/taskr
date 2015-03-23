@@ -154,14 +154,14 @@ class TaskManager(object):
 
     # Dispatch ---------------------------------------------------------------------------------------------------------
 
-    def dispatch(self):
+    def dispatch(self, args=None):
         # Setup action name if manager has main task
-        in_args = sys.argv[1:]
+        args = args or sys.argv[1:]
         if self.main_task:  # main_task is a weak reference to task
-            in_args = [self.main_task.name] + in_args
+            args = [self.main_task.name] + args
 
         # Parse argument
-        args = self.parser.parse_args(in_args)
+        args = self.parser.parse_args(args)
         if hasattr(args, '__instance__'):
             task_object = args.__instance__
             """:type: Task"""
