@@ -16,7 +16,9 @@
 
 from __future__ import unicode_literals, division, absolute_import, print_function
 import math
-from taskr import console as default_console
+import shlex
+import six
+from taskr import console as default_console, Color
 from taskr.contrib.validators import integer_validator
 
 
@@ -65,8 +67,46 @@ def prompt_for_choice(choices, prompt=None, console=default_console, default=-1)
                          **input_kwargs)
 
 
+def shell(task, welcome_banner=None, prompt_text=None, prompt_color=None, prompt_symbol='>'):
+    if prompt_color:
+        prompt_text = Color.str(prompt_text, foreground=prompt_color)
+    prompt = '{}{} '.format(prompt_text.strip()+' ' or '', prompt_symbol)
+    # noinspection PyShadowingBuiltins
+    input = six.moves.input
+
+    if welcome_banner:
+        print(welcome_banner)
+    print('(Use ctrl+c to quit)')
+    while True:
+        try:
+            cmd = input(prompt)
+        except KeyboardInterrupt:
+            break
+        else:
+            try:
+                task.dispatch(shlex.split(cmd))
+            except SystemExit:
+                pass
+        finally:
+            print('')
+
+
 if __name__ == '__main__':
-    cities = ['Tokyo', 'Osaka', 'Sapporo', 'Nagoya']
-    print(cities[prompt_for_choice(cities, prompt='Choose a city', default=0)])
-    print('-'*40)
-    print(cities[prompt_for_choice(cities, prompt='Choose a city')])
+    pass
+
+    # cities = ['Tokyo', 'Osaka', 'Sapporo', 'Nagoya']
+    # print(cities[prompt_for_choice(cities, prompt='Choose a city', default=0)])
+    # print('-'*40)
+    # print(cities[prompt_for_choice(cities, prompt='Choose a city')])
+
+    # from taskr import task
+    #
+    # @task
+    # def a():
+    #     print('a')
+    #
+    # @task
+    # def b(n, c=True):
+    #     print('b ' + n + str(c))
+    #
+    # shell(task, prompt_color=Color.CYAN, prompt_text='cli-demo', welcome_banner='cli test')
