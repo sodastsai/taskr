@@ -18,20 +18,15 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 from setuptools import setup, find_packages
-import os
-
-with open(os.path.join(os.path.dirname(__file__), 'README.md'), 'r') as f:
-    long_description = f.read()
 
 setup(name='taskr',
-      version='0.2.15.2',
+      version='0.2.15.3',
       description='Python Command Line Utility',
       author='sodastsai',
       author_email='sodas2002@gmail.com',
       license='Apache License Version 2.0',
       url='https://github.com/sodastsai/taskr',
-      package_data={'taskr': ['*.txt', '*.md']},
-      long_description=long_description,
+      long_description='''taskr - python command line utility helper''',
       packages=find_packages(),
       install_requires=[
           'six>=1.8.0',
