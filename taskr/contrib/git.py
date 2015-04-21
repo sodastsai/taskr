@@ -41,8 +41,12 @@ class GitRepo(object):
         stdout, stderr = run('cd {} && git {}'.format(self.source_root, command),
                              capture_output=capture_output, use_shell=use_shell)
         if stderr:
-            raise ValueError('"{}" is not a git repository'.format(self.source_root))
+            raise ValueError('Failed to run git command at "{}". stderr={}'.format(self.source_root, stderr))
         return stdout
+
+    @property
+    def head_hash(self):
+        return self.run_git_command('rev-parse HEAD')
 
     @property
     def is_clean(self):
@@ -76,4 +80,7 @@ class GitRepo(object):
         self.run_git_command('add {}'.format(' '.join(file_paths)))
 
     def commit(self, message):
-        self.run_git_command('commit -m {}'.format(message))
+        self.run_git_command('commit -m "{}"'.format(message))
+
+    def reset(self, commit, hard=False):
+        self.run_git_command('reset {} {}'.format('--hard' if hard else '--soft', commit))
