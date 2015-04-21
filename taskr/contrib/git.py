@@ -31,14 +31,14 @@ class GitRepo(object):
     def source_root(self):
         return self._source_root
 
-    def _run_git_command(self, command, capture_output=True, use_shell=False):
+    def run_git_command(self, command, capture_output=True, use_shell=False):
         """
         :type command: str
         :type capture_output: bool
         :type use_shell: bool
         :rtype: str
         """
-        stdout, stderr = run('cd {} && {}'.format(self.source_root, command),
+        stdout, stderr = run('cd {} && git {}'.format(self.source_root, command),
                              capture_output=capture_output, use_shell=use_shell)
         if stderr:
             raise ValueError('"{}" is not a git repository'.format(self.source_root))
@@ -57,7 +57,7 @@ class GitRepo(object):
         :rtype: OrderedDict[str, str]
         """
         result = OrderedDict()
-        for stdout_line in self._run_git_command('git status --porcelain').split('\n'):
+        for stdout_line in self.run_git_command('status --porcelain').split('\n'):
             if stdout_line:
                 result[stdout_line[2:].strip()] = stdout_line[:2]
         return result
@@ -67,4 +67,13 @@ class GitRepo(object):
         """
         :rtype: str
         """
-        return self._run_git_command('git branch | grep "*" | awk \'{print $2}\'')
+        return self.run_git_command('branch | grep "*" | awk \'{print $2}\'')
+
+    def add(self, *file_paths):
+        """
+        :param file_paths: list[str]
+        """
+        self.run_git_command('add {}'.format(' '.join(file_paths)))
+
+    def commit(self, message):
+        self.run_git_command('commit -m {}'.format(message))
