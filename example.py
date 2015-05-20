@@ -36,5 +36,18 @@ def run(source, destination, vehicle, speed=42, step_size=1):
 def sleep(arguments):
     print('Sleep from {0.start_time} to {0.end_time}'.format(arguments))
 
+
+#
+# Python 3 only
+#
+@task
+@task.set_name('sum')
+@task.set_argument('numbers', nargs='*', type=int)
+@task.set_argument('--start', dest='start', type=int)
+def _sum(*numbers, start=0):
+    print(sum(numbers, start))
+
+
+
 if __name__ == '__main__':
     task.dispatch()

@@ -16,6 +16,7 @@
 from __future__ import unicode_literals, print_function, absolute_import, division
 import argparse
 from collections import OrderedDict
+from copy import deepcopy
 import inspect
 import functools
 import six
@@ -174,8 +175,12 @@ class TaskManager(object):
             else:
                 kwargs = dict(vars(args))
                 kwargs.pop('__instance__')
-                task_object.arguments = kwargs
-                call_args = ()
+                task_object.arguments = deepcopy(kwargs)  # copy it
+                if task_object.varargs in kwargs:
+                    _varargs = kwargs.pop(task_object.varargs)
+                    call_args = _varargs
+                else:
+                    call_args = ()
                 call_kwargs = kwargs
 
             try:
@@ -232,6 +237,11 @@ class Task(object):
         self.aliases = []
         self.help_text = None
 
+        self.args = ()
+        self.kwargs = {}
+        self.varargs = None
+        """:type: str"""
+
     def __call__(self, *args, **kwargs):
         self.callable(*args, **kwargs)
 
@@ -262,6 +272,9 @@ class Task(object):
             else:
                 args = arg_spec.args
                 kwargs = {}
+            if hasattr(arg_spec, 'kwonlydefaults') and arg_spec.kwonlydefaults:
+                kwargs.update(arg_spec.kwonlydefaults)
+            varargs = arg_spec.varargs
             # Remove 'self' of object method args
             if self.callable_is_object:
                 args = args[1:]
@@ -280,6 +293,13 @@ class Task(object):
                     arg_kwargs['default'] = default_value
 
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
+            if varargs:
+                group, arg_args, arg_kwargs = self.manual_arguments.get(varargs)
+                self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
+
+            self.args = args
+            self.kwargs = kwargs
+            self.varargs = varargs
 
     def _get_argument_group(self, group):
         """
