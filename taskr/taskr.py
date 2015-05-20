@@ -127,7 +127,8 @@ class TaskManager(object):
                 # Optional
                 dest = kwargs.get('dest', None)
                 if not dest:
-                    dest = hyphen_prefix_pattern.sub('', args[0]).replace('-', '_')
+                    dest_candidates = [arg for arg in args if arg.startswith('--')][0]
+                    dest = hyphen_prefix_pattern.sub('', dest_candidates).replace('-', '_')
                 task_object.manual_arguments[dest] = (group, args, kwargs)
             else:
                 # Positional
