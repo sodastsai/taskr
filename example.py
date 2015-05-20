@@ -42,9 +42,10 @@ def sleep(arguments):
 #
 @task
 @task.set_name('sum')
-@task.set_argument('numbers', nargs='*', type=int)
-@task.set_argument('--start', dest='start', type=int)
+@task.set_argument('numbers', type=int)
+@task.set_argument('--start', type=int)
 def _sum(*numbers, start=0):
+    print(numbers, start)
     print(sum(numbers, start))
 
 

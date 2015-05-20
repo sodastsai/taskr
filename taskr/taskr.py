@@ -19,11 +19,15 @@ from collections import OrderedDict
 from copy import deepcopy
 import inspect
 import functools
+import re
 import six
 import sys
 import types
 import weakref
 from .terminal import Color, Console
+
+
+hyphen_prefix_pattern = re.compile(r'^-+')
 
 
 class TaskManager(object):
@@ -123,11 +127,7 @@ class TaskManager(object):
                 # Optional
                 dest = kwargs.get('dest', None)
                 if not dest:
-                    dest = args[0]
-                    """:type: str"""
-                    while dest.startswith('-'):
-                        dest = dest[1:]
-                    dest = dest.replace('-', '_')
+                    dest = hyphen_prefix_pattern.sub('', args[0]).replace('-', '_')
                 task_object.manual_arguments[dest] = (group, args, kwargs)
             else:
                 # Positional
@@ -294,7 +294,9 @@ class Task(object):
 
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
             if varargs:
-                group, arg_args, arg_kwargs = self.manual_arguments.get(varargs)
+                group, arg_args, arg_kwargs = self.manual_arguments.get(varargs, ('*', (varargs,), {'nargs': '*'}))
+                if 'nargs' not in arg_kwargs:
+                    arg_kwargs['nargs'] = '*'
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
 
             self.args = args
