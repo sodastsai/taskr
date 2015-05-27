@@ -47,8 +47,8 @@ def lazy_property(func):
     add called
     2
 
-    :param func: types.FunctionType
-    :return: types.FunctionType
+    :type func: types.FunctionType
+    :rtype: types.FunctionType
     """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -67,3 +67,33 @@ def import_string(symbol_path):
     symbol = symbol_components[-1]
     symbol_module = '.'.join(symbol_components[:-1])
     return getattr(import_module(symbol_module), symbol)
+
+
+def once(func):
+    """
+
+    >>> @once
+    ... def get():
+    ...     print('Calling get')
+    ...     return 42
+    ...
+    >>> get()
+    Calling get
+    42
+    >>> get()
+    42
+    >>> get()
+    42
+
+    :type func: types.FunctionType
+    :rtype: types.FunctionType
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        once_key = '__taskr_once_func_result__'
+        if hasattr(func, once_key):
+            return getattr(func, once_key)
+        result = func(*args, **kwargs)
+        setattr(func, once_key, result)
+        return result
+    return wrapper
