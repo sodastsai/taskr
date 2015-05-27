@@ -63,6 +63,19 @@ def lazy_property(func):
 
 
 def import_string(symbol_path):
+    """
+
+    >>> imported_by_string = import_string('os.path')
+    >>> import os
+    >>> os.path == imported_by_string
+    True
+    >>> from collections import OrderedDict
+    >>> imported_by_string = import_string('collections.OrderedDict')
+    >>> tuples = (('a', 1), ('b', 2))
+    >>> OrderedDict(tuples) == imported_by_string(tuples)
+    True
+
+    """
     symbol_components = symbol_path.split('.')
     symbol = symbol_components[-1]
     symbol_module = '.'.join(symbol_components[:-1])
