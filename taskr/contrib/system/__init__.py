@@ -49,7 +49,7 @@ def run(command, capture_output=True, use_shell=False, print_command=False,
     """
     use_shell = '&&' in command or '||' in command or use_shell
     if print_command:
-        print(print_command)
+        print(command)
     popen = subprocess.Popen(command if use_shell else shlex.split(command),
                              stdout=subprocess.PIPE if capture_output else None,
                              stderr=subprocess.PIPE if capture_output else None,
