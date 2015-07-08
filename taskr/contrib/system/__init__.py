@@ -32,19 +32,36 @@ class _OSInfo(object):
 os_info = _OSInfo()
 
 
-def run(command, capture_output=True, use_shell=False):
+class RunCommandError(ValueError):
+    pass
+
+
+def run(command, capture_output=True, use_shell=False, print_command=False,
+        should_return_returncode=False, should_raise_when_fail=False):
     """
     :type command: str
     :type capture_output: bool
     :type use_shell: bool
-    :rtype: (str, str)
+    :type print_command: bool
+    :type should_return_returncode: bool
+    :type should_raise_when_fail: bool
+    :rtype: (str, str, int) | (str, str)
     """
     use_shell = '&&' in command or '||' in command or use_shell
-    stdout, stderr = subprocess.Popen(command if use_shell else shlex.split(command),
-                                      stdout=subprocess.PIPE if capture_output else None,
-                                      stderr=subprocess.PIPE if capture_output else None,
-                                      shell=use_shell).communicate()
-    return stdout.decode('utf-8').strip(), stderr.decode('utf-8').strip()
+    if print_command:
+        print(print_command)
+    popen = subprocess.Popen(command if use_shell else shlex.split(command),
+                             stdout=subprocess.PIPE if capture_output else None,
+                             stderr=subprocess.PIPE if capture_output else None,
+                             shell=use_shell)
+    stdout, stderr = popen.communicate()
+    return_code = popen.returncode
+    if return_code != 0 and should_raise_when_fail:
+        raise RunCommandError('Command execution returns {}'.format(return_code))
+    if should_return_returncode:
+        return stdout.decode('utf-8').strip(), stderr.decode('utf-8').strip(), return_code
+    else:
+        return stdout.decode('utf-8').strip(), stderr.decode('utf-8').strip()
 
 
 def has_command(command):
@@ -53,5 +70,5 @@ def has_command(command):
     :type command: str
     :rtype: bool
     """
-    stdout, _ = run('which {}'.format(command))
-    return len(stdout) != 0
+    stdout, _, return_code = run('which {}'.format(command), should_return_returncode=True)
+    return len(stdout) != 0 and return_code == 0
