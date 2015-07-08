@@ -15,6 +15,7 @@
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
 from collections import OrderedDict
+import os
 from .system import run
 
 
@@ -23,8 +24,8 @@ from .system import run
 
 class GitRepo(object):
 
-    def __init__(self, source_root):
-        self._source_root = source_root
+    def __init__(self, source_root=None):
+        self._source_root = source_root or os.getcwd()
         """:type: str"""
 
     @property
@@ -65,6 +66,14 @@ class GitRepo(object):
             if stdout_line:
                 result[stdout_line[2:].strip()] = stdout_line[:2]
         return result
+
+    @property
+    def tags(self):
+        return self.run_git_command('tag').split('\n')
+
+    @property
+    def branches(self):
+        return list(map(lambda x: x.strip().replace('* ', ''), self.run_git_command('branch').split('\n')))
 
     @property
     def current_branch(self):
