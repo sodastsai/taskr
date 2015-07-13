@@ -48,7 +48,9 @@ def boolean_function_validator(func):
 
 def validate_boolean(raw_value):
     import six
-    if isinstance(raw_value, six.string_types):
+    if isinstance(raw_value, bool):
+        return raw_value
+    elif isinstance(raw_value, six.string_types):
         if raw_value.lower() in ('true', 't', 'yes', 'y'):
             return True
         elif raw_value.lower() in ('false', 'f', 'no', 'n'):

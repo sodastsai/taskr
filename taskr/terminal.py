@@ -145,22 +145,23 @@ class Console(object):
                 self.error(error_msg)
                 if task and leave_when_cancel:
                     task.exit(1)
-                return None
-            # Default value
-            if (result is None or len(result) == 0) and has_default:
-                result = default
-            # Validate
-            if validators:
-                for validator in validators:
-                    try:
-                        result = validator(result)
-                    except ValueError as e:
-                        has_result = False
-                        if has_default:
-                            result = default
-                        else:
-                            self.error(str(e))
-                        break
-            # Return rt repeat
-            if not repeat_until_valid or has_result:
-                return result
+                result = None
+            finally:
+                # Default value
+                if (result is None or len(result) == 0) and has_default:
+                    result = default
+                # Validate
+                if validators:
+                    for validator in validators:
+                        try:
+                            result = validator(result)
+                        except ValueError as e:
+                            has_result = False
+                            if has_default:
+                                result = default
+                            else:
+                                self.error(str(e))
+                            break
+                # Return rt repeat
+                if not repeat_until_valid or has_result:
+                    return result

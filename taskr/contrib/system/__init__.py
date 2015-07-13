@@ -58,10 +58,22 @@ def run(command, capture_output=True, use_shell=False, print_command=False,
     return_code = popen.returncode
     if return_code != 0 and should_raise_when_fail:
         raise RunCommandError('Command execution returns {}'.format(return_code))
+
+    def _process_output(raw_output):
+        try:
+            _output = raw_output.decode('utf-8')
+        except ValueError:
+            return raw_output
+        else:
+            return _output.strip()
+
+    stdout = _process_output(stdout)
+    stderr = _process_output(stderr)
+
     if should_return_returncode:
-        return stdout.decode('utf-8').strip(), stderr.decode('utf-8').strip(), return_code
+        return stdout, stderr, return_code
     else:
-        return stdout.decode('utf-8').strip(), stderr.decode('utf-8').strip()
+        return stdout, stderr
 
 
 def has_command(command):
