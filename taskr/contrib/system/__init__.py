@@ -65,7 +65,7 @@ def run(command, capture_output=True, use_shell=False, print_command=False,
         except ValueError:
             return raw_output
         else:
-            return _output.strip()
+            return _output[:-1]  # strip last '\n'
 
     stdout = _process_output(stdout)
     stderr = _process_output(stderr)
