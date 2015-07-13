@@ -82,15 +82,26 @@ class GitRepo(object):
         """
         return self.run_git_command('branch | grep "*" | awk \'{print $2}\'')
 
-    def changed_files(self, commit='HEAD'):
-        return self.run_git_command('diff-tree --no-commit-id --name-only -r {}'.format(commit)).split('\n')
+    def changed_files(self, commit='HEAD', another_commit='HEAD^'):
+        """
+        :type commit: str
+        :type another_commit: str
+        :rtype: list[str]
+        """
+        return self.run_git_command('diff-tree --no-commit-id --name-only -r {} {}'
+                                    .format(commit, another_commit)).split('\n')
 
     def file_content(self, path, commit=''):
+        """
+        :type path: str
+        :type commit: str
+        :rtype: str | bytes
+        """
         return self.run_git_command('show {}:{}'.format(commit, path))
 
     def add(self, *file_paths):
         """
-        :param file_paths: list[str]
+        :type file_paths: list[str]
         """
         self.run_git_command('add {}'.format(' '.join(file_paths)))
 
