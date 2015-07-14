@@ -88,8 +88,8 @@ class GitRepo(object):
         :type another_commit: str
         :rtype: list[str]
         """
-        return self.run_git_command('diff-tree --no-commit-id --name-only -r {} {}'
-                                    .format(commit, another_commit)).split('\n')
+        result = self.run_git_command('diff-tree --no-commit-id --name-only -r {} {}'.format(commit, another_commit))
+        return result.split('\n') if result else []
 
     def file_content(self, path, commit=''):
         """
