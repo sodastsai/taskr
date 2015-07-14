@@ -46,6 +46,25 @@ class GitRepo(object):
         return stdout
 
     @property
+    def config(self):
+        result = {}
+        for config_line in self.run_git_command('config --list').splitlines():
+            config_line_components = config_line.split('=')
+            raw_key = config_line_components[0]
+            value = '='.join(config_line_components[1:])
+
+            raw_key_components = raw_key.split('.')
+            container = result
+            for idx, raw_key_component in enumerate(raw_key_components):
+                if raw_key_component not in container:
+                    container[raw_key_component] = {}
+                if idx != len(raw_key_components)-1:
+                    container = container[raw_key_component]
+                else:
+                    container[raw_key_component] = value
+        return result
+
+    @property
     def head_hash(self):
         return self.run_git_command('rev-parse HEAD')
 
