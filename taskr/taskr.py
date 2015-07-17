@@ -46,7 +46,7 @@ class TaskManager(object):
 
         self.pool = {}
 
-     @property
+    @property
     def tasks(self):
         return self._tasks
 
@@ -124,34 +124,19 @@ class TaskManager(object):
             return task_object
         return wrapper
 
-    def set_group_argument(self, group, *args, **kwargs):
+    def set_group_argument(self, *args, **kwargs):
         def wrapper(callable_obj):
             task_object = self._task_object(callable_obj)
-
-            if args[0].startswith('-'):
-                # Optional
-                dest = kwargs.get('dest', None)
-                if not dest:
-                    # Find from args
-                    dest_candidates = [arg for arg in args if arg.startswith('--')]
-                    if len(dest_candidates):
-                        dest = dest_candidates[0].lstrip('-').replace('-', '_')
-                if not dest:
-                    # Raise exception
-                    raise ValueError('Cannot find destination of the argument "{}" for {}'.format(
-                        ', '.join(args),
-                        task_object
-                    ))
-                task_object.manual_arguments[dest] = (group, args, kwargs)
-            else:
-                # Positional
-                task_object.manual_arguments[kwargs.get('dest', args[0])] = (group, args, kwargs)
-
+            task_object.set_group_argument(*args, **kwargs)
             return task_object
         return wrapper
 
     def set_argument(self, *args, **kwargs):
-        return self.set_group_argument('*', *args, **kwargs)
+        def wrapper(callable_obj):
+            task_object = self._task_object(callable_obj)
+            task_object.set_argument(*args, **kwargs)
+            return task_object
+        return wrapper
 
     def alias(self, name):
         def wrapper(callable_obj):
@@ -338,3 +323,26 @@ class Task(object):
             self.argument_groups[group_title] = self.parser.add_argument_group(title=group_title,
                                                                                description=group_description)
         return self.argument_groups[group_title]
+
+    def set_group_argument(self, group, *args, **kwargs):
+        if args[0].startswith('-'):
+            # Optional
+            dest = kwargs.get('dest', None)
+            if not dest:
+                # Find from args
+                dest_candidates = [arg for arg in args if arg.startswith('--')]
+                if len(dest_candidates):
+                    dest = dest_candidates[0].lstrip('-').replace('-', '_')
+            if not dest:
+                # Raise exception
+                raise ValueError('Cannot find destination of the argument "{}" for {}'.format(
+                    ', '.join(args),
+                    self
+                ))
+            self.manual_arguments[dest] = (group, args, kwargs)
+        else:
+            # Positional
+            self.manual_arguments[kwargs.get('dest', args[0])] = (group, args, kwargs)
+
+    def set_argument(self, *args, **kwargs):
+        self.set_group_argument('*', *args, **kwargs)
