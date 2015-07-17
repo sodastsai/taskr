@@ -126,7 +126,7 @@ class TaskManager(object):
 
     @_task_manager_method_decorator(with_arguments=False)
     def __call__(self, task_object):
-        task_object.setup_argparser()
+        pass  # Keep for generating task object (by the decorator)
 
     @_task_manager_method_decorator(with_arguments=False)
     def pass_argparse_namespace(self, task_object):
@@ -163,6 +163,10 @@ class TaskManager(object):
     # Dispatch ---------------------------------------------------------------------------------------------------------
 
     def dispatch(self, args=None):
+        # Setup arg-parser
+        for task in self.tasks:
+            task.setup_argparser()
+
         # Setup action name if manager has main task
         args = args or sys.argv[1:]
         if self.main_task:  # main_task is a weak reference to task
