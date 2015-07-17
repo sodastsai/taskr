@@ -26,6 +26,38 @@ import weakref
 from .terminal import Color, Console
 
 
+# noinspection PyPep8Naming
+class _task_manager_method_decorator(object):
+
+    def __init__(self, with_arguments):
+        self.with_arguments = with_arguments
+
+    def __call__(self, task_manager_method):
+        if self.with_arguments:
+            def task_manager_method_wrapper(task_instance, *task_manager_method_args, **task_manager_method_kwargs):
+                """
+                :type task_instance: TaskManager
+                """
+                def callable_wrapper(callable_obj):
+                    # noinspection PyProtectedMember
+                    task_object = task_instance._get_or_create_task_object(callable_obj)
+                    task_manager_method(task_instance, task_object,
+                                        *task_manager_method_args, **task_manager_method_kwargs)
+                    return task_object
+                return callable_wrapper
+        else:
+            def task_manager_method_wrapper(task_instance, callable_obj):
+                """
+                :type task_instance: TaskManager
+                """
+                # noinspection PyProtectedMember
+                task_object = task_instance._get_or_create_task_object(callable_obj)
+                task_manager_method(task_instance, task_object)
+                return task_object
+
+        return task_manager_method_wrapper
+
+
 class TaskManager(object):
 
     def __init__(self):
@@ -73,7 +105,7 @@ class TaskManager(object):
         """
         self._main_task = weakref.ref(obj) if obj else None
 
-    def _task_object(self, callable_obj):
+    def _get_or_create_task_object(self, callable_obj):
         """
         :rtype: Task
         """
@@ -92,65 +124,41 @@ class TaskManager(object):
 
     # Decorators -------------------------------------------------------------------------------------------------------
 
-    def __call__(self, callable_obj):
-        """
-        :rtype: Task
-        """
-        task_object = self._task_object(callable_obj)
+    @_task_manager_method_decorator(with_arguments=False)
+    def __call__(self, task_object):
         task_object.setup_argparser()
-        return task_object
 
-    def pass_argparse_namespace(self, callable_obj):
-        task_object = self._task_object(callable_obj)
+    @_task_manager_method_decorator(with_arguments=False)
+    def pass_argparse_namespace(self, task_object):
         task_object.pass_argparse_namespace = True
-        return task_object
 
-    def main(self, callable_obj):
-        task_object = self._task_object(callable_obj)
+    @_task_manager_method_decorator(with_arguments=False)
+    def main(self, task_object):
         task_object.manager.main_task = task_object
-        return task_object
 
-    def set_name(self, task_name):
-        def wrapper(callable_obj):
-            task_object = self._task_object(callable_obj)
-            task_object.name = task_name
-            return task_object
-        return wrapper
+    @_task_manager_method_decorator(with_arguments=True)
+    def set_name(self, task_object, name):
+        task_object.name = name
 
-    def set_exit_cleanup(self, cleanup_func):
-        def wrapper(callable_obj):
-            task_object = self._task_object(callable_obj)
-            task_object.cleanup_function = cleanup_func
-            return task_object
-        return wrapper
+    @_task_manager_method_decorator(with_arguments=True)
+    def set_exit_cleanup(self, task_object, cleanup_func):
+        task_object.cleanup_function = cleanup_func
 
-    def set_group_argument(self, *args, **kwargs):
-        def wrapper(callable_obj):
-            task_object = self._task_object(callable_obj)
-            task_object.set_group_argument(*args, **kwargs)
-            return task_object
-        return wrapper
+    @_task_manager_method_decorator(with_arguments=True)
+    def set_group_argument(self, task_object, *args, **kwargs):
+        task_object.set_group_argument(*args, **kwargs)
 
-    def set_argument(self, *args, **kwargs):
-        def wrapper(callable_obj):
-            task_object = self._task_object(callable_obj)
-            task_object.set_argument(*args, **kwargs)
-            return task_object
-        return wrapper
+    @_task_manager_method_decorator(with_arguments=True)
+    def set_argument(self, task_object, *args, **kwargs):
+        task_object.set_argument(*args, **kwargs)
 
-    def alias(self, name):
-        def wrapper(callable_obj):
-            task_object = self._task_object(callable_obj)
-            task_object.aliases.append(name)
-            return task_object
-        return wrapper
+    @_task_manager_method_decorator(with_arguments=True)
+    def alias(self, task_object, name):
+        task_object.aliases.append(name)
 
-    def help(self, help_text):
-        def wrapper(callable_obj):
-            task_object = self._task_object(callable_obj)
-            task_object.help_text = help_text
-            return task_object
-        return wrapper
+    @_task_manager_method_decorator(with_arguments=True)
+    def help(self, task_object, help_text):
+        task_object.help_text = help_text
 
     # Dispatch ---------------------------------------------------------------------------------------------------------
 
