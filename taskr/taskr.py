@@ -29,6 +29,9 @@ from .terminal import Color, Console
 class TaskManager(object):
 
     def __init__(self):
+        self._tasks = set()
+        """:type: set[Task]"""
+
         # Argument parsers
         self.parser = argparse.ArgumentParser()
         self.action_subparser = self.parser.add_subparsers(title='Action')
@@ -42,6 +45,10 @@ class TaskManager(object):
         self._main_task = None
 
         self.pool = {}
+
+     @property
+    def tasks(self):
+        return self._tasks
 
     @property
     def help_text(self):
@@ -73,7 +80,9 @@ class TaskManager(object):
         if isinstance(callable_obj, Task):
             return callable_obj
         elif callable(callable_obj):
-            return Task(callable_obj, self)
+            task_obj = Task(callable_obj, self)
+            self._tasks.add(task_obj)
+            return task_obj
         else:
             raise ValueError('{} object is not callable'.format(callable_obj))
 
@@ -247,8 +256,11 @@ class Task(object):
         self.varargs = None
         """:type: str"""
 
+    def __repr__(self):
+        return '<Task: {}>'.format(self.name)
+
     def __str__(self):
-        return str(getattr(self.callable, '__name__', self.callable))
+        return repr(self)
 
     def __call__(self, *args, **kwargs):
         self.callable(*args, **kwargs)
