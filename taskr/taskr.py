@@ -301,13 +301,19 @@ class Task(object):
                 group, arg_args, arg_kwargs = self.manual_arguments.get(arg_name, ('*', (arg_name,), {}))
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
             for kwarg_name, default_value in kwargs.items():
-                group, arg_args, arg_kwargs = self.manual_arguments.get(kwarg_name,
-                                                                        ('*',
-                                                                         ('--' + kwarg_name.replace('_', '-'),),
-                                                                         {}))
+                group, arg_args, arg_kwargs = self.manual_arguments.get(
+                    kwarg_name,
+                    (
+                        '*',  # group
+                        ('-' + kwarg_name[0], '--' + kwarg_name.replace('_', '-'),),  # arg_args
+                        {}  # arg_kwargs
+                    )
+                )
 
                 if 'default' not in arg_kwargs:
                     arg_kwargs['default'] = default_value
+                if 'action' not in arg_kwargs and isinstance(default_value, bool):
+                    arg_kwargs['action'] = 'store_false' if default_value else 'store_true'
 
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
             if varargs:
