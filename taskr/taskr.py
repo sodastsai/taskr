@@ -15,6 +15,7 @@
 #
 from __future__ import unicode_literals, print_function, absolute_import, division
 import argparse
+from taskr.argparser import ArgumentParser, ArgumentParserError
 from collections import OrderedDict
 from copy import deepcopy
 import inspect
@@ -65,7 +66,7 @@ class TaskManager(object):
         """:type: set[Task]"""
 
         # Argument parsers
-        self.parser = argparse.ArgumentParser()
+        self.parser = ArgumentParser()
         self.action_subparser = self.parser.add_subparsers(title='Action')
 
         # Exception handling
@@ -169,12 +170,23 @@ class TaskManager(object):
 
         # Setup action name if manager has main task
         args = args or sys.argv[1:]
-        if self.main_task:  # main_task is a weak reference to task
-            args = [self.main_task.name] + args
 
         # Parse argument
-        args = self.parser.parse_args(args)
+        try:
+            args = self.parser.parse_args(args)
+        except ArgumentParserError:
+            if self.main_task:
+                # Check for main task
+                args = [self.main_task.name] + args
+                try:
+                    args = self.parser.parse_args(args)
+                except ArgumentParserError:
+                    args = argparse.Namespace()
+            else:
+                args = argparse.Namespace()
+
         if hasattr(args, '__instance__'):
+            # Call task object
             task_object = args.__instance__
             """:type: Task"""
             self.executing_task_object = task_object
@@ -196,14 +208,16 @@ class TaskManager(object):
 
             try:
                 task_object(*call_args, **call_kwargs)
-            except (Exception, KeyboardInterrupt) as e:
+            except BaseException as e:
                 if self.should_raise_exceptions:
                     self._call_cleanup_func()
                     raise
                 else:
                     self.exit(status=1, message='Error: {}\n'.format(e))
         else:
+            # Leave
             self.parser.print_help()
+            self.exit(status=1)
 
     # Error ------------------------------------------------------------------------------------------------------------
 

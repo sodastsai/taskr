@@ -19,9 +19,10 @@ from taskr import task
 
 
 @task
+@task.main
 @task.set_group_argument('places', 'source', help='The source where you come from', choices=('Tokyo', 'Osaka'))
 @task.set_group_argument('places', 'destination')
-@task.set_argument('--speed', '-s', help='The speed you wanna run', type=int, dest='speed')
+@task.set_argument('--speed', help='The speed you wanna run', type=int, dest='speed')
 def run(source, destination, vehicle, speed=42, step_size=1):
     if speed < 0:
         raise ValueError('speed should be a postive number.')
