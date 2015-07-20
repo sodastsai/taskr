@@ -17,6 +17,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 import shlex
 import subprocess
 import sys
+import six
 
 
 class _OSInfo(object):
@@ -36,8 +37,27 @@ class RunCommandError(ValueError):
     pass
 
 
-def run(command, capture_output=True, use_shell=False, print_command=False,
-        should_return_returncode=False, should_raise_when_fail=False):
+_run_global_settings = {
+    'capture_output': True,
+    'use_shell': False,
+    'print_command': False,
+    'should_return_returncode': False,
+    'should_raise_when_fail': False,
+}
+
+
+def run_settings(**kwargs):
+    """
+    :type capture_output: bool
+    :type use_shell: bool
+    :type print_command: bool
+    :type should_return_returncode: bool
+    :type should_raise_when_fail: bool
+    """
+    _run_global_settings.update(kwargs)
+
+
+def run(command, **kwargs):
     """
     :type command: str
     :type capture_output: bool
@@ -47,6 +67,14 @@ def run(command, capture_output=True, use_shell=False, print_command=False,
     :type should_raise_when_fail: bool
     :rtype: (str, str, int) | (str, str)
     """
+    for key, value in six.iteritems(_run_global_settings):
+        kwargs.setdefault(key, value)
+    capture_output = kwargs['capture_output']
+    use_shell = kwargs['use_shell']
+    print_command = kwargs['print_command']
+    should_return_returncode = kwargs['should_return_returncode']
+    should_raise_when_fail = kwargs['should_raise_when_fail']
+
     use_shell = '&&' in command or '||' in command or use_shell
     if print_command:
         print(command)
@@ -60,6 +88,9 @@ def run(command, capture_output=True, use_shell=False, print_command=False,
         raise RunCommandError('Command execution returns {}'.format(return_code))
 
     def _process_output(raw_output):
+        if raw_output is None:
+            return raw_output
+
         try:
             _output = raw_output.decode('utf-8')
         except ValueError:
@@ -70,10 +101,13 @@ def run(command, capture_output=True, use_shell=False, print_command=False,
     stdout = _process_output(stdout)
     stderr = _process_output(stderr)
 
-    if should_return_returncode:
-        return stdout, stderr, return_code
-    else:
-        return stdout, stderr
+    if capture_output:
+        if should_return_returncode:
+            return stdout, stderr, return_code
+        else:
+            return stdout, stderr
+    elif should_return_returncode:
+        return return_code
 
 
 def has_command(command):
