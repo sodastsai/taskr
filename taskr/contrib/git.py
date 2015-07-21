@@ -32,7 +32,7 @@ class GitRepo(object):
     def source_root(self):
         return self._source_root
 
-    def run_git_command(self, command, capture_output=True, use_shell=False):
+    def run_git_command(self, command, capture_output=True, use_shell=False, **kwargs):
         """
         :type command: str
         :type capture_output: bool
@@ -40,7 +40,7 @@ class GitRepo(object):
         :rtype: str
         """
         stdout, stderr = run('cd {} && git {}'.format(self.source_root, command),
-                             capture_output=capture_output, use_shell=use_shell)
+                             capture_output=capture_output, use_shell=use_shell, **kwargs)
         if stderr:
             raise ValueError('Failed to run git command at "{}". stderr={}'.format(self.source_root, stderr))
         return stdout
@@ -120,7 +120,7 @@ class GitRepo(object):
         :type commit: str
         :rtype: str | bytes
         """
-        return self.run_git_command('show {}:{}'.format(commit, path))
+        return self.run_git_command('show {}:{}'.format(commit, path), should_strip_output=False)
 
     def add(self, *file_paths):
         """
