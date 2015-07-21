@@ -46,6 +46,18 @@ _run_global_settings = {
 }
 
 
+def _process_run_command_output(raw_output):
+    if raw_output is None:
+        return raw_output
+
+    try:
+        _output = raw_output.decode('utf-8')
+    except ValueError:
+        return raw_output
+    else:
+        return _output[:-1]  # strip last '\n'
+
+
 def run_settings(**kwargs):
     """
     :type capture_output: bool
@@ -82,26 +94,16 @@ def run(command, **kwargs):
                              stdout=subprocess.PIPE if capture_output else None,
                              stderr=subprocess.PIPE if capture_output else None,
                              shell=use_shell)
+
     stdout, stderr = popen.communicate()
     return_code = popen.returncode
     if return_code != 0 and should_raise_when_fail:
         raise RunCommandError('Command execution returns {}'.format(return_code))
 
-    def _process_output(raw_output):
-        if raw_output is None:
-            return raw_output
-
-        try:
-            _output = raw_output.decode('utf-8')
-        except ValueError:
-            return raw_output
-        else:
-            return _output[:-1]  # strip last '\n'
-
-    stdout = _process_output(stdout)
-    stderr = _process_output(stderr)
-
     if capture_output:
+        stdout = _process_run_command_output(stdout)
+        stderr = _process_run_command_output(stderr)
+
         if should_return_returncode:
             return stdout, stderr, return_code
         else:
