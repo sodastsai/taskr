@@ -83,7 +83,11 @@ class GitRepo(object):
         result = OrderedDict()
         for stdout_line in self.run_git_command('status --porcelain').split('\n'):
             if stdout_line:
-                result[stdout_line[2:].strip()] = stdout_line[:2]
+                file_path = stdout_line[2:].strip()
+                status = stdout_line[:2]
+                if status[0] == 'R':
+                    file_path = file_path.split('->')[-1].strip()
+                result[file_path] = status
         return result
 
     @property
