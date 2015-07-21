@@ -73,7 +73,7 @@ class TaskManager(object):
         self.should_raise_exceptions = False
 
         # Executing info
-        self.executing_task_object = None
+        self._executing_task = None
         """:type: Task"""
         self._main_task = None
 
@@ -81,7 +81,14 @@ class TaskManager(object):
 
     @property
     def tasks(self):
+        """
+        :rtype: set[Task]
+        """
         return self._tasks
+
+    @property
+    def executing_task(self):
+        return self._executing_task
 
     @property
     def help_text(self):
@@ -120,8 +127,8 @@ class TaskManager(object):
             raise ValueError('{} object is not callable'.format(callable_obj))
 
     def _call_cleanup_func(self):
-        if self.executing_task_object:
-            self.executing_task_object.cleanup_function(self.executing_task_object)
+        if self._executing_task:
+            self._executing_task.cleanup_function(self._executing_task)
 
     # Decorators -------------------------------------------------------------------------------------------------------
 
@@ -158,6 +165,10 @@ class TaskManager(object):
         task_object.aliases.append(name)
 
     @_task_manager_method_decorator(with_arguments=True)
+    def auto_create_short_arguments(self, task_object, auto_create_short_arguments):
+        task_object.auto_create_short_arguments = auto_create_short_arguments
+
+    @_task_manager_method_decorator(with_arguments=True)
     def help(self, task_object, help_text):
         task_object.help_text = help_text
 
@@ -165,31 +176,45 @@ class TaskManager(object):
 
     def dispatch(self, args=None):
         # Setup arg-parser
+        task_dict = {task.name: task for task in self.tasks}
         for task in self.tasks:
             task.setup_argparser()
 
         # Setup action name if manager has main task
         args = args or sys.argv[1:]
-
+        if len(args) == 0:
+            args = [self.main_task.name]
         # Parse argument
+        error_msg = None
         try:
             args = self.parser.parse_args(args)
-        except ArgumentParserError:
-            if self.main_task:
+            final_parser = self.parser
+        except ArgumentParserError as e:
+            error_msg = str(e)
+            if len(args) > 0 and args[0] in task_dict:
+                final_parser = task_dict[args[0]].parser
+                args = argparse.Namespace()
+            elif self.main_task:
+                # Append main task if necessary
+                if len(args) == 0 or args[0] != self.main_task.name:
+                    args = [self.main_task.name] + args
                 # Check for main task
-                args = [self.main_task.name] + args
                 try:
                     args = self.parser.parse_args(args)
-                except ArgumentParserError:
+                except ArgumentParserError as e:
+                    error_msg = str(e)
                     args = argparse.Namespace()
+                finally:
+                    final_parser = self.main_task.parser
             else:
+                final_parser = self.parser
                 args = argparse.Namespace()
-
+        # dispatch or print help
         if hasattr(args, '__instance__'):
             # Call task object
             task_object = args.__instance__
             """:type: Task"""
-            self.executing_task_object = task_object
+            self._executing_task = task_object
 
             if task_object.pass_argparse_namespace:
                 task_object.arguments = args
@@ -216,7 +241,9 @@ class TaskManager(object):
                     self.exit(status=1, message='Error: {}\n'.format(e))
         else:
             # Leave
-            self.parser.print_help()
+            if error_msg:
+                print('{}: error: {}'.format(final_parser.prog, error_msg))
+            final_parser.print_help()
             self.exit(status=1)
 
     # Error ------------------------------------------------------------------------------------------------------------
@@ -252,6 +279,7 @@ class Task(object):
         self.arguments = {}
 
         self.manual_arguments = OrderedDict()
+        self.auto_create_short_arguments = True
         self.pass_argparse_namespace = False
         self.cleanup_function = lambda x: None
 
@@ -318,9 +346,13 @@ class Task(object):
                 group, arg_args, arg_kwargs = self.manual_arguments.get(
                     kwarg_name,
                     (
-                        '*',  # group
-                        ('-' + kwarg_name[0], '--' + kwarg_name.replace('_', '-'),),  # arg_args
-                        {}  # arg_kwargs
+                        # group
+                        '*',
+                        # arg_args
+                        (('-' + kwarg_name[0],) if self.auto_create_short_arguments else ()) +
+                        ('--' + kwarg_name.replace('_', '-'),),
+                        # arg_kwargs
+                        {},
                     )
                 )
 
