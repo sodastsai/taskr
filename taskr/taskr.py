@@ -182,7 +182,7 @@ class TaskManager(object):
 
         # Setup action name if manager has main task
         args = args or sys.argv[1:]
-        if len(args) == 0:
+        if len(args) == 0 and self.main_task:
             args = [self.main_task.name]
         # Parse argument
         error_msg = None
