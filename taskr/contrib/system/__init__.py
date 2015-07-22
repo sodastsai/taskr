@@ -91,7 +91,7 @@ def run(command, **kwargs):
     should_raise_when_fail = kwargs['should_raise_when_fail']
     should_strip_output = kwargs['should_strip_output']
 
-    use_shell = '&&' in command or '||' in command or use_shell
+    use_shell = '&&' in command or '||' in command or '|' in command or use_shell
     if print_command:
         print(command)
     popen = subprocess.Popen(command if use_shell else shlex.split(command),
