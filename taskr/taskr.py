@@ -15,6 +15,7 @@
 #
 from __future__ import unicode_literals, print_function, absolute_import, division
 import argparse
+import re
 from taskr.argparser import ArgumentParser, ArgumentParserError
 from collections import OrderedDict
 from copy import deepcopy
@@ -293,6 +294,7 @@ class Task(object):
         self.argument_groups = None
         self.aliases = []
         self.help_text = None
+        self.strip_arguments_in_docstring = True
 
         self.args = ()
         self.kwargs = {}
@@ -308,12 +310,38 @@ class Task(object):
     def __call__(self, *args, **kwargs):
         self.callable(*args, **kwargs)
 
+    def parse_doc_str(self):
+        if self.callable.__doc__ is None:
+            return '', {}
+
+        arguments = {}
+        final_docs = []
+        doc_lines = self.callable.__doc__.splitlines()
+        """:type: list[str]"""
+        for line in doc_lines:
+            stripped_line = line.strip()
+            if stripped_line.startswith(':param'):
+                _, name, description = map(str.strip, stripped_line.split(':'))
+                name = name.split(' ')[-1]
+                if description:
+                    arguments[name] = description
+            else:
+                final_docs.append(line)
+
+        whitespace_pattern = re.compile(r'\s+')
+        final_docs = '\n'.join(map(str.strip, filter(whitespace_pattern.search, final_docs))).strip()
+        return final_docs, arguments
+
     def setup_argparser(self):
+        task_description, task_args_description = self.parse_doc_str()
+
         add_parser_kwargs = {}
         if six.PY3:
             add_parser_kwargs['aliases'] = self.aliases
         if self.help_text:
             add_parser_kwargs['help'] = self.help_text
+        add_parser_kwargs['formatter_class'] = argparse.RawDescriptionHelpFormatter
+        add_parser_kwargs['description'] = task_description
         self.parser = self.manager.action_subparser.add_parser(self.name, **add_parser_kwargs)
         self.parser.set_defaults(__instance__=self)
         self.argument_groups = {'*': self.parser}
@@ -345,7 +373,10 @@ class Task(object):
             # Register
             for arg_name in args:
                 group, arg_args, arg_kwargs = self.manual_arguments.get(arg_name, ('*', (arg_name,), {}))
+                if 'help' not in arg_kwargs and arg_name in task_args_description:
+                    arg_kwargs['help'] = task_args_description[arg_name]
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
+
             for kwarg_name, default_value in kwargs.items():
                 group, arg_args, arg_kwargs = self.manual_arguments.get(
                     kwarg_name,
@@ -360,6 +391,8 @@ class Task(object):
                     )
                 )
 
+                if 'help' not in arg_kwargs and kwarg_name in task_args_description:
+                    arg_kwargs['help'] = task_args_description[kwarg_name]
                 if 'default' not in arg_kwargs:
                     arg_kwargs['default'] = default_value
                 if 'action' not in arg_kwargs and isinstance(default_value, bool):
@@ -370,6 +403,8 @@ class Task(object):
                 group, arg_args, arg_kwargs = self.manual_arguments.get(varargs, ('*', (varargs,), {'nargs': '*'}))
                 if 'nargs' not in arg_kwargs:
                     arg_kwargs['nargs'] = '*'
+                if 'help' not in arg_kwargs and varargs in task_args_description:
+                    arg_kwargs['help'] = task_args_description[varargs]
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
 
             self.args = args

@@ -20,10 +20,22 @@ from taskr import task
 
 @task
 @task.main
-@task.set_group_argument('places', 'source', help='The source where you come from', choices=('Tokyo', 'Osaka'))
+@task.set_group_argument('places', 'source', help='Place where you come from', choices=('Tokyo', 'Osaka'))
 @task.set_group_argument('places', 'destination')
 @task.set_argument('--speed', help='The speed you wanna run', type=int, dest='speed')
 def run(source, destination, vehicle, speed=42, step_size=1):
+    """
+    Let's travel everywhere
+
+    :param source: Location where you come from
+    :param str destination: Place to go
+    :param vehicle: The vehicle you wanna take. Maybe `Shinkansen`
+    :param speed: The speed how fast you move
+    :param step_size: The length of your each step
+
+    yo~
+
+    """
     if speed < 0:
         raise ValueError('speed should be a postive number.')
     print('Run from {0} to {1} by vehicle={4} speed={2} and step={3}'
