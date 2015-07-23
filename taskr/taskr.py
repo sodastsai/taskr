@@ -233,7 +233,7 @@ class TaskManager(object):
 
             try:
                 task_object(*call_args, **call_kwargs)
-            except BaseException as e:
+            except Exception as e:
                 if self.should_raise_exceptions:
                     self._call_cleanup_func()
                     raise
