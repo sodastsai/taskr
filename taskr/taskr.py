@@ -71,6 +71,7 @@ class TaskManager(object):
 
         # Exception handling
         self.should_raise_exceptions = False
+        self.exit_code = 0
 
         # Executing info
         self._executing_task = None
@@ -174,7 +175,7 @@ class TaskManager(object):
 
     # Dispatch ---------------------------------------------------------------------------------------------------------
 
-    def dispatch(self, args=None):
+    def dispatch(self, args=None, keep_running_after_finished=False):
         # Setup arg-parser
         task_dict = {task.name: task for task in self.tasks}
         for task in self.tasks:
@@ -239,6 +240,9 @@ class TaskManager(object):
                     raise
                 else:
                     self.exit(status=1, message='Error: {}\n'.format(e))
+            else:
+                if not keep_running_after_finished:
+                    sys.exit(self.exit_code)
         else:
             # Leave
             if error_msg:
