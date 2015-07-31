@@ -85,7 +85,7 @@ class Console(object):
     warn_color = (Color.YELLOW, False)
 
     def __init__(self, f, write_line=True, color=True):
-        self._output_color = color
+        self.output_color = color
         self._output = f
         self._write_line = write_line
 
@@ -104,7 +104,7 @@ class Console(object):
     def show(self, message, foreground=-1, background=-1, light=False, bar_width=0, bar_character='='):
         if bar_width != 0:
             message = self.bar(message, bar_width, bar_character)
-        output_str = Color.str(message, foreground, background, light) if self._output_color else message
+        output_str = Color.str(message, foreground, background, light) if self.output_color else message
         if self._write_line:
             output_str += '\n'
         self._output.write(output_str)
