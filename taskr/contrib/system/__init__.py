@@ -43,11 +43,11 @@ _run_global_settings = {
     'print_command': False,
     'should_return_returncode': False,
     'should_raise_when_fail': False,
-    'should_strip_output': True
+    'should_process_output': True
 }
 
 
-def _process_run_command_output(raw_output, strip_output):
+def _process_run_command_output(raw_output):
     if raw_output is None:
         return raw_output
 
@@ -56,7 +56,7 @@ def _process_run_command_output(raw_output, strip_output):
     except ValueError:
         return raw_output
     else:
-        return _output[:-1] if strip_output else _output  # strip last '\n'
+        return _output[:-1]
 
 
 def run_settings(**kwargs):
@@ -79,7 +79,7 @@ def run(command, **kwargs):
     :type print_command: bool
     :type should_return_returncode: bool
     :type should_raise_when_fail: bool
-    :type should_strip_output: bool
+    :type should_process_output: bool
     :rtype: (str, str, int) | (str, str)
     """
     for key, value in six.iteritems(_run_global_settings):
@@ -89,7 +89,7 @@ def run(command, **kwargs):
     print_command = kwargs['print_command']
     should_return_returncode = kwargs['should_return_returncode']
     should_raise_when_fail = kwargs['should_raise_when_fail']
-    should_strip_output = kwargs['should_strip_output']
+    should_process_output = kwargs['should_process_output']
 
     use_shell = '&&' in command or '||' in command or '|' in command or use_shell
     if print_command:
@@ -105,8 +105,9 @@ def run(command, **kwargs):
         raise RunCommandError('Command execution returns {}'.format(return_code))
 
     if capture_output:
-        stdout = _process_run_command_output(stdout, should_strip_output)
-        stderr = _process_run_command_output(stderr, should_strip_output)
+        if should_process_output:
+            stdout = _process_run_command_output(stdout)
+            stderr = _process_run_command_output(stderr)
 
         if should_return_returncode:
             return stdout, stderr, return_code

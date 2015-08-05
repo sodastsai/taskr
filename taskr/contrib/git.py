@@ -120,7 +120,7 @@ class GitRepo(object):
         :type commit: str
         :rtype: str | bytes
         """
-        return self.run_git_command('show {}:{}'.format(commit, path), should_strip_output=False)
+        return self.run_git_command('show {}:{}'.format(commit, path), should_process_output=False)
 
     def add(self, *file_paths):
         """
