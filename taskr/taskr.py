@@ -228,6 +228,8 @@ class TaskManager(object):
                 task_object.arguments = deepcopy(kwargs)  # copy it
                 if task_object.varargs in kwargs:
                     _varargs = kwargs.pop(task_object.varargs)
+                    if not isinstance(_varargs, (list, tuple)):
+                        _varargs = [_varargs]
                     call_args = _varargs
                 else:
                     call_args = ()
