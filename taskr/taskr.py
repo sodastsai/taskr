@@ -249,7 +249,7 @@ class TaskManager(object):
         else:
             # Leave
             if error_msg:
-                print('{}: error: {}'.format(final_parser.prog, error_msg))
+                print('{}: error: {}\n'.format(final_parser.prog, error_msg))
             final_parser.print_help()
             self.exit(status=1)
 
