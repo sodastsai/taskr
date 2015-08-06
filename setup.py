@@ -20,7 +20,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 from setuptools import setup, find_packages
 
 setup(name='taskr',
-      version='0.2.33',
+      version='0.2.34',
       description='Python Command Line Utility',
       author='sodastsai',
       author_email='sodas2002@gmail.com',
