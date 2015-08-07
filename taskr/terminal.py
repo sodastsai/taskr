@@ -33,9 +33,16 @@ readline.set_completer(path_complete)
 
 
 class Color(object):
+    CLEAR = -1
     LIGHT = 1
+    UNDERLINE = 4
+    BLINK = 5
+    SWAP = 7
+    HIDE = 8
+
     FOREGROUND = 30
     BACKGROUND = 40
+
     BLACK = 0
     RED = 1
     GREEN = 2
@@ -44,24 +51,44 @@ class Color(object):
     MAGENTA = 5
     CYAN = 6
     WHITE = 7
-    CLEAR = -1
+
+    LIGHT_BLACK = 60
+    LIGHT_RED = 61
+    LIGHT_GREEN = 62
+    LIGHT_YELLOW = 63
+    LIGHT_BLUE = 64
+    LIGHT_MAGENTA = 65
+    LIGHT_CYAN = 66
+    LIGHT_WHITE = 67
 
     @classmethod
-    def str(cls, message, foreground=-1, background=-1, light=False):
-        return '{}{}{}'.format(cls.head(foreground, background, light), message, cls.tail)
-
-    @classmethod
-    def head(cls, foreground=-1, background=-1, light=False):
+    def str(cls, message, foreground=-1, background=-1,
+            light=False, underline=False, blink=False, swap=False, hide=False):
         codes = []
         if light:
-            codes.append(str(cls.LIGHT))
+            codes.append(cls.LIGHT)
+        if underline:
+            codes.append(cls.UNDERLINE)
+        if blink:
+            codes.append(cls.BLINK)
+        if swap:
+            codes.append(cls.SWAP)
+        if hide:
+            codes.append(cls.HIDE)
         if foreground >= 0:
-            codes.append(str(cls.FOREGROUND + foreground))
+            codes.append(cls.FOREGROUND + foreground)
         if background >= 0:
-            codes.append(str(cls.BACKGROUND + background))
-        return '\033[{}m'.format(';'.join(codes))
+            codes.append(cls.BACKGROUND + background)
 
-    tail = '\033[m'
+        return cls.str_with_codes(message, *codes)
+
+    @classmethod
+    def str_with_codes(cls, message, *codes):
+        return '{}{}{}'.format(cls.code(*codes), message, cls.code())
+
+    @classmethod
+    def code(cls, *codes):
+        return '\033[{}m'.format(';'.join(map(str, codes)))
 
 
 class Console(object):
