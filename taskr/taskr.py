@@ -237,14 +237,15 @@ class TaskManager(object):
 
             try:
                 task_object(*call_args, **call_kwargs)
-            except Exception as e:
+            except BaseException as e:
                 if self.should_raise_exceptions:
                     self._call_cleanup_func()
                     raise
                 else:
-                    self.exit(status=1, message='Error: {}\n'.format(e))
+                    self.exit(status=1, message='Error: {}\n'.format(str(e) or e.__class__.__name__))
             else:
                 if not keep_running_after_finished:
+                    self._call_cleanup_func()
                     sys.exit(self.exit_code)
         else:
             # Leave
