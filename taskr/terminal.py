@@ -172,8 +172,7 @@ class Console(object):
                 self.error(error_msg)
                 if task and leave_when_cancel:
                     task.exit(1)
-                result = None
-            finally:
+            else:
                 # Default value
                 if (result is None or len(result) == 0) and has_default:
                     result = default
@@ -182,7 +181,7 @@ class Console(object):
                     for validator in validators:
                         try:
                             result = validator(result)
-                        except ValueError as e:
+                        except Exception as e:
                             has_result = False
                             if has_default:
                                 result = default
