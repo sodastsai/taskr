@@ -16,6 +16,7 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 from collections import OrderedDict
 import os
+from taskr.contrib.converters import escape_quote
 from .system import run
 
 
@@ -120,13 +121,13 @@ class GitRepo(object):
         :type commit: str
         :rtype: str | bytes
         """
-        return self.run_git_command('show {}:{}'.format(commit, path), should_process_output=False)
+        return self.run_git_command('show {}:"{}"'.format(commit, path), should_process_output=False)
 
     def add(self, *file_paths):
         """
         :type file_paths: list[str]
         """
-        self.run_git_command('add {}'.format(' '.join(file_paths)))
+        self.run_git_command('add {}'.format(' '.join(map(lambda x: '"{}"'.format(escape_quote(x)), file_paths))))
 
     def commit(self, message):
         self.run_git_command('commit -m "{}"'.format(message))
