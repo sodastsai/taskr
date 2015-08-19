@@ -66,3 +66,48 @@ def unescape_quote(string):
     :rtype: str
     """
     return _escaped_quote_pattern.sub(r'\g<1>', string)
+
+
+def collections_to_string(iterable, threshold=-1):
+    """
+
+    >>> collections_to_string([])
+    ''
+    >>> collections_to_string([1])
+    '1'
+    >>> collections_to_string([1, 2])
+    '1 and 2'
+    >>> collections_to_string([1, 2, 3, 4])
+    '1, 2, 3, and 4'
+    >>> collections_to_string([1, 2, 3, 4], threshold=4)
+    '1, 2, 3, and 4'
+    >>> collections_to_string([1, 2, 3, 4, 5, 6], threshold=4)
+    '1, 2, 3, 4, and 2 items'
+    >>> collections_to_string([1, 2, 3, 4, 5], threshold=4)
+    '1, 2, 3, 4, and 5'
+    >>> collections_to_string([1, 2, 3, 4], threshold=20)
+    '1, 2, 3, and 4'
+
+    """
+    if len(iterable) == 0:
+        return ''
+    elif len(iterable) < 2:
+        return str(iterable[0])
+
+    if threshold == -1 or threshold >= len(iterable):
+        threshold = len(iterable) - 1
+
+    comman_list = []
+    and_item = None
+    for idx, item in enumerate(iterable):
+        if and_item is not None:
+            break
+        elif len(comman_list) < threshold:
+            comman_list.append(item)
+        elif idx == len(iterable) - 1:
+            and_item = item
+        else:
+            remainder_length = len(iterable) - idx
+            and_item = '{} items'.format(remainder_length)
+
+    return ', '.join(map(str, comman_list)) + (',' if len(comman_list) > 2 else '') + ' and ' + str(and_item)
