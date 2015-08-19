@@ -27,6 +27,9 @@ import types
 import weakref
 from .terminal import Color, Console
 
+whitespace_pattern = re.compile(r'\s+')
+prefix_whitespace_pattern = re.compile(r'^\s+')
+
 
 # noinspection PyPep8Naming
 class _task_manager_method_decorator(object):
@@ -320,8 +323,15 @@ class Task(object):
         arguments = {}
         final_docs = []
         doc_lines = self.callable.__doc__.splitlines()
+        doc_lines_global_indentation = None
         """:type: list[str]"""
         for line in doc_lines:
+            if doc_lines_global_indentation is None:
+                prefix_whitespace_match = prefix_whitespace_pattern.match(line)
+                if prefix_whitespace_match:
+                    doc_lines_global_indentation = prefix_whitespace_match.span()[1]
+
+            line = line[(doc_lines_global_indentation or 0):]
             stripped_line = line.strip()
             if stripped_line.startswith(':param'):
                 _, name, description = map(str.strip, stripped_line.split(':'))
@@ -331,8 +341,7 @@ class Task(object):
             else:
                 final_docs.append(line)
 
-        whitespace_pattern = re.compile(r'\s+')
-        final_docs = '\n'.join(map(str.strip, filter(whitespace_pattern.search, final_docs))).strip()
+        final_docs = '\n'.join(final_docs).strip()
         return final_docs, arguments
 
     def setup_argparser(self):
