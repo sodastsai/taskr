@@ -22,7 +22,7 @@ from taskr import console as default_console, Color
 from taskr.contrib.validators import integer_validator
 
 
-def prompt_for_choice(choices, prompt=None, console=default_console, default=-1):
+def prompt_for_choice(choices, prompt=None, console=default_console, default=-1, input_kwargs=None):
     """
     :param choices: list of choices. should be a list of str
     :type choices: list[str]
@@ -57,7 +57,7 @@ def prompt_for_choice(choices, prompt=None, console=default_console, default=-1)
         else:
             raise ValueError('The index is greater than the number of choices')
 
-    input_kwargs = {}
+    input_kwargs = input_kwargs or {}
     if has_default:
         input_kwargs['default'] = default
     return console.input(prompt=prompt or 'Choose one from above options',
