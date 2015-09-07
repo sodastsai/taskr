@@ -16,14 +16,45 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import hashlib
+import six
 
 
-def md5(file_path):
+def md5(file_or_path):
+    """
+
+    >>> import os
+    >>> import random
+    >>> import tempfile
+    >>> from taskr.contrib.system import run
+    >>> with tempfile.TemporaryDirectory() as tempdir:
+    ...     temppath = os.path.join(tempdir, 'test')
+    ...     with open(temppath, 'w') as f:
+    ...         _1 = f.write(str(random.randint(1, 1024)))  # Suppress output
+    ...         _2 = f.write(' ')  # Suppress output
+    ...         _3 = f.write(str(random.randint(1, 1024)))  # Suppress output
+    ...     expected, _ = run("md5 {} | awk '{{print $4}}'".format(temppath))
+    ...     result_path = md5(temppath).hexdigest()
+    ...     with open(temppath, 'rb') as f:
+    ...         result_file = md5(f).hexdigest()
+    ...     expected == result_file == result_path
+    True
+
+    :type file_or_path: io.FileIO|str
+    :rtype: _hashlib.HASH
+    """
+
+    if isinstance(file_or_path, six.string_types):
+        with open(file_or_path, 'rb') as file:
+            return md5(file)
+
+    file = file_or_path
+    """:type: io.FileIO"""
+
     _md5 = hashlib.md5()
-    with open(file_path, 'rb') as f:
-        buffer_length = 128
-        _buffer = f.read(buffer_length)
-        while len(_buffer) > 0:
-            _md5.update(_buffer)
-            _buffer = f.read(buffer_length)
+    buffer_length = 128
+    _buffer = file.read(buffer_length)
+    while len(_buffer) > 0:
+        _md5.update(_buffer)
+        _buffer = file.read(buffer_length)
+
     return _md5
