@@ -44,7 +44,9 @@ def md5(file_or_path):
     """
 
     if isinstance(file_or_path, six.string_types):
-        with open(file_or_path, 'rb') as file:
+        path = file_or_path
+        """:type: str"""
+        with open(path, 'rb') as file:
             return md5(file)
 
     file = file_or_path
