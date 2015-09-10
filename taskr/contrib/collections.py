@@ -14,6 +14,92 @@
 # limitations under the License.
 #
 import copy
+import re
+import six
+if six.PY3:
+    from collections.abc import Sequence
+else:
+    from collections import Sequence
+
+_keypath_index_subscript_pattern = re.compile(r'^\[(?P<index>\d+)\]$')
+
+
+def _keypath_component_handler(component):
+    """
+
+    >>> _keypath_component_handler('str')
+    'str'
+    >>> _keypath_component_handler('[42]')
+    42
+    >>> _keypath_component_handler('[label]')
+    '[label]'
+    >>> _keypath_component_handler('[r1]')
+    '[r1]'
+
+    :type component: str
+    :rtype: int|str
+    """
+    match = _keypath_index_subscript_pattern.match(component)
+    if match and match.group('index'):
+        return int(match.group('index'))
+    else:
+        return component
+
+
+def get_value_by_keypath(obj, keypath, **kwargs):
+    """
+
+    >>> get_value_by_keypath([1, 2, 3], '[0]')
+    1
+    >>> get_value_by_keypath({'answer': 42}, 'answer')
+    42
+    >>> try:
+    ...     get_value_by_keypath({'answer': 42}, 'answer.k')
+    ... except KeyError as e:
+    ...     print(e)
+    'answer.k'
+    >>> get_value_by_keypath({'answer': 42}, 'answer.k', default='gg')
+    'gg'
+    >>> get_value_by_keypath({'answer': {'value': 42}}, 'answer.value')
+    42
+    >>> get_value_by_keypath({'answer': {'value': [41, 42, 43]}}, 'answer.value.[1]')
+    42
+    >>> try:
+    ...     get_value_by_keypath({'answer': {'value': [41, 42, 43]}}, 'answer.value.[3]')
+    ... except IndexError as e:
+    ...     print(e)
+    list index out of range
+    >>> get_value_by_keypath({'answer': {'value': [41, 42, 43]}}, 'answer.value.[3]', default='XD')
+    'XD'
+
+    :type obj: list[T]|dict[U,T]
+    :type keypath: str
+    :rtype: T
+    """
+
+    if len(keypath) == 0:
+        raise KeyError(keypath)
+
+    has_default = 'default' in kwargs
+    default = kwargs.get('default')
+
+    target = obj
+    for keypath_component in map(_keypath_component_handler, keypath.split('.')):
+        if isinstance(target, Sequence) and isinstance(keypath_component, int):
+            if keypath_component < len(target) or not has_default:
+                target = target[keypath_component]
+            else:
+                return default
+        elif isinstance(target, dict):
+            if has_default:
+                target = target.get(keypath_component, default)
+            else:
+                target = target[keypath_component]
+        elif has_default:
+            return default
+        else:
+            raise KeyError(keypath)
+    return target
 
 
 def deep_update_dict(dict1, dict2, update_dict1=True):
