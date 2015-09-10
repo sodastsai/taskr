@@ -17,6 +17,8 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 
 import hashlib
 import six
+if six.PY3:
+    import pathlib
 
 
 def md5(file_or_path):
@@ -48,6 +50,12 @@ def md5(file_or_path):
         """:type: str"""
         with open(path, 'rb') as file:
             return md5(file)
+    elif six.PY3:
+        if isinstance(file_or_path, pathlib.Path):
+            path = file_or_path
+            """:type: pathlib.Path"""
+            with path.open('rb') as file:
+                return md5(file)
 
     file = file_or_path
     """:type: io.FileIO"""
