@@ -41,7 +41,7 @@ def md5(file_or_path):
     ...     expected == result_file == result_path
     True
 
-    :type file_or_path: io.FileIO|str
+    :type file_or_path: io.FileIO|str|pathlib.Path
     :rtype: _hashlib.HASH
     """
 

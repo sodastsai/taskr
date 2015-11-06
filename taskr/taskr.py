@@ -14,17 +14,20 @@
 # limitations under the License.
 #
 from __future__ import unicode_literals, print_function, absolute_import, division
+
 import argparse
-import re
-from taskr.argparser import ArgumentParser, ArgumentParserError
-from collections import OrderedDict
-from copy import deepcopy
-import inspect
 import functools
-import six
+import inspect
+import re
 import sys
 import types
 import weakref
+from collections import OrderedDict
+from copy import deepcopy
+
+import six
+
+from .argparser import ArgumentParser, ArgumentParserError
 from .terminal import Color, Console
 
 whitespace_pattern = re.compile(r'\s+')
@@ -42,6 +45,8 @@ class _task_manager_method_decorator(object):
             def task_manager_method_wrapper(task_instance, *task_manager_method_args, **task_manager_method_kwargs):
                 """
                 :type task_instance: TaskManager
+                :type task_manager_method_args: tuple
+                :type task_manager_method_kwargs: dict
                 """
                 def callable_wrapper(callable_obj):
                     # noinspection PyProtectedMember
@@ -54,6 +59,7 @@ class _task_manager_method_decorator(object):
             def task_manager_method_wrapper(task_instance, callable_obj):
                 """
                 :type task_instance: TaskManager
+                :type callable_obj: function
                 """
                 # noinspection PyProtectedMember
                 task_object = task_instance._get_or_create_task_object(callable_obj)
@@ -226,6 +232,7 @@ class TaskManager(object):
                 call_args = (args,)
                 call_kwargs = {}
             else:
+                # noinspection PyTypeChecker
                 kwargs = dict(vars(args))
                 kwargs.pop('__instance__')
                 task_object.arguments = deepcopy(kwargs)  # copy it
