@@ -69,6 +69,10 @@ class _task_manager_method_decorator(object):
         return task_manager_method_wrapper
 
 
+class TaskrHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+    pass
+
+
 class TaskManager(object):
 
     def __init__(self):
@@ -76,7 +80,7 @@ class TaskManager(object):
         """:type: set[Task]"""
 
         # Argument parsers
-        self.parser = ArgumentParser()
+        self.parser = ArgumentParser(formatter_class=TaskrHelpFormatter)
         self.action_subparser = self.parser.add_subparsers(title='Action')
 
         # Exception handling
@@ -359,7 +363,7 @@ class Task(object):
             add_parser_kwargs['aliases'] = self.aliases
         if self.help_text:
             add_parser_kwargs['help'] = self.help_text
-        add_parser_kwargs['formatter_class'] = argparse.RawDescriptionHelpFormatter
+        add_parser_kwargs['formatter_class'] = TaskrHelpFormatter
         add_parser_kwargs['description'] = task_description
         self.parser = self.manager.action_subparser.add_parser(self.name, **add_parser_kwargs)
         self.parser.set_defaults(__instance__=self)
