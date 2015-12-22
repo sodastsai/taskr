@@ -18,6 +18,8 @@ import glob
 import os
 import readline
 
+import six
+
 
 # Setup readline for path auto-complete
 def path_complete(text, state):
@@ -144,9 +146,6 @@ class Console(object):
 
     def input(self, prompt,
               hint=None, validators=None, repeat_until_valid=False, task=None, leave_when_cancel=None, **kwargs):
-        """
-        :param default:
-        """
         has_default = 'default' in kwargs
         default = kwargs.get('default', None)
 
@@ -159,13 +158,10 @@ class Console(object):
             message_components.append('[{0}]'.format(default))
         message = ''.join(message_components).strip() + ': '
 
-        import six
-        # noinspection PyShadowingBuiltins
-        input = six.moves.input
         while True:
             has_result = True
             try:
-                result = input(message).strip()
+                result = six.moves.input(message).strip()
             except KeyboardInterrupt:
                 self.show('')
                 error_msg = 'User cancelled input.'
@@ -184,10 +180,10 @@ class Console(object):
                         except Exception as e:
                             has_result = False
                             if has_default:
-                                result = default
+                                result = validator(default)
                             else:
                                 self.error(str(e))
-                            break
+                                break
                 # Return rt repeat
                 if not repeat_until_valid or has_result:
                     return result
