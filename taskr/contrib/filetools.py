@@ -16,14 +16,15 @@
 from __future__ import unicode_literals, division, absolute_import, print_function
 
 import hashlib
+import os
 import six
+
 if six.PY3:
     import pathlib
 
 
 def md5(file_or_path):
     """
-
     >>> import os
     >>> import random
     >>> import tempfile
@@ -41,30 +42,48 @@ def md5(file_or_path):
     ...     expected == result_file == result_path
     True
 
-    :type file_or_path: io.FileIO|str|pathlib.Path
+    :param file_or_path: str|pathlib.Path|io.FileIO
+    :return:
+    """
+    if isinstance(file_or_path, six.string_types):
+        _path_str = file_or_path
+        """:type: str"""
+        if os.path.isdir(_path_str):
+            h = hashlib.md5()
+            for _sub_path_str in (os.path.join(root, file) for root, _, files in os.walk(_path_str) for file in files):
+                with open(_sub_path_str, 'rb') as file:
+                    h = _md5_file(file, h)
+            return h
+        else:
+            with open(_path_str, 'rb') as file:
+                return _md5_file(file)
+    elif six.PY3 and isinstance(file_or_path, pathlib.Path):
+        _path_obj = file_or_path
+        """:type: pathlib.Path"""
+        if _path_obj.is_dir():
+            h = hashlib.md5()
+            for _sub_path_obj in _path_obj.glob('**/*'):
+                with _sub_path_obj.open('rb') as file:
+                    h = _md5_file(file, h)
+            return h
+        else:
+            with _path_obj.open('rb') as file:
+                return _md5_file(file)
+    else:
+        return _md5_file(file_or_path)
+
+
+def _md5_file(file, h=None):
+    """
+    :type file: io.FileIO
+    :type h: _hashlib.HASH
     :rtype: _hashlib.HASH
     """
-
-    if isinstance(file_or_path, six.string_types):
-        path = file_or_path
-        """:type: str"""
-        with open(path, 'rb') as file:
-            return md5(file)
-    elif six.PY3:
-        if isinstance(file_or_path, pathlib.Path):
-            path = file_or_path
-            """:type: pathlib.Path"""
-            with path.open('rb') as file:
-                return md5(file)
-
-    file = file_or_path
-    """:type: io.FileIO"""
-
-    _md5 = hashlib.md5()
+    h = h or hashlib.md5()
     buffer_length = 128
     _buffer = file.read(buffer_length)
     while len(_buffer) > 0:
-        _md5.update(_buffer)
+        h.update(_buffer)
         _buffer = file.read(buffer_length)
 
-    return _md5
+    return h
