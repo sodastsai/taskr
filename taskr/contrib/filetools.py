@@ -23,7 +23,7 @@ if six.PY3:
     import pathlib
 
 
-def md5(file_or_path):
+def md5(file_or_path, hash_obj=None):
     """
     >>> import os
     >>> import random
@@ -42,48 +42,54 @@ def md5(file_or_path):
     ...     expected == result_file == result_path
     True
 
-    :param file_or_path: str|pathlib.Path|io.FileIO
-    :return:
-    """
-    if isinstance(file_or_path, six.string_types):
-        _path_str = file_or_path
-        """:type: str"""
-        if os.path.isdir(_path_str):
-            h = hashlib.md5()
-            for _sub_path_str in (os.path.join(root, file) for root, _, files in os.walk(_path_str) for file in files):
-                with open(_sub_path_str, 'rb') as file:
-                    h = _md5_file(file, h)
-            return h
-        else:
-            with open(_path_str, 'rb') as file:
-                return _md5_file(file)
-    elif six.PY3 and isinstance(file_or_path, pathlib.Path):
-        _path_obj = file_or_path
-        """:type: pathlib.Path"""
-        if _path_obj.is_dir():
-            h = hashlib.md5()
-            for _sub_path_obj in _path_obj.glob('**/*'):
-                with _sub_path_obj.open('rb') as file:
-                    h = _md5_file(file, h)
-            return h
-        else:
-            with _path_obj.open('rb') as file:
-                return _md5_file(file)
-    else:
-        return _md5_file(file_or_path)
-
-
-def _md5_file(file, h=None):
-    """
-    :type file: io.FileIO
-    :type h: _hashlib.HASH
+    :type file_or_path: str|pathlib.Path|io.FileIO|list|tuple
+    :type hash_obj: _hashlib.HASH|None
     :rtype: _hashlib.HASH
     """
-    h = h or hashlib.md5()
+    hash_obj = hash_obj or hashlib.md5()
+
+    if isinstance(file_or_path, (list, tuple)):
+        for _file_or_path in file_or_path:
+            md5(_file_or_path, hash_obj)
+    elif isinstance(file_or_path, six.string_types):
+        _path_str = file_or_path  # type: str
+        if os.path.isdir(_path_str):
+            for _sub_path_str in (os.path.join(root, file) for root, _, files in os.walk(_path_str) for file in files):
+                with open(_sub_path_str, 'rb') as file:
+                    _md5_file(file, hash_obj)
+        else:
+            with open(_path_str, 'rb') as file:
+                _md5_file(file, hash_obj)
+    elif six.PY3 and isinstance(file_or_path, pathlib.Path):
+        _path_obj = file_or_path  # type: pathlib.Path
+        if _path_obj.is_dir():
+            for _sub_path_obj in _path_obj.glob('**/*'):
+                with _sub_path_obj.open('rb') as file:
+                    _md5_file(file, hash_obj)
+        else:
+            with _path_obj.open('rb') as file:
+                _md5_file(file, hash_obj)
+    else:
+        _md5_file(file_or_path, hash_obj)
+
+    return hash_obj
+
+
+def _md5_file(file, hash_obj):
+    """
+    :type file: io.FileIO
+    :type hash_obj: _hashlib.HASH
+    :rtype: _hashlib.HASH
+    """
     buffer_length = 128
     _buffer = file.read(buffer_length)
     while len(_buffer) > 0:
-        h.update(_buffer)
+        hash_obj.update(_buffer)
         _buffer = file.read(buffer_length)
 
-    return h
+    return hash_obj
+
+
+if __name__ == '__main__':
+    import sys
+    print(md5(sys.argv[1:] or os.getcwd()).hexdigest())
