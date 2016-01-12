@@ -92,4 +92,14 @@ def _md5_file(file, hash_obj):
 
 if __name__ == '__main__':
     import sys
-    print(md5(sys.argv[1:] or os.getcwd()).hexdigest())
+    arguments = sys.argv[1:]
+    if len(arguments) == 0:
+        action = None
+    else:
+        action = arguments[0]
+        arguments = arguments[1:]
+
+    if action == 'md5':
+        print(md5(arguments or os.getcwd()).hexdigest())
+    else:
+        raise ValueError('Unknown action. Got {}. Should be {"md5"}'.format(action))
