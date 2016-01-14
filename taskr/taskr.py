@@ -423,6 +423,8 @@ class Task(object):
                     arg_kwargs['default'] = default_value
                 if 'action' not in arg_kwargs and isinstance(default_value, bool):
                     arg_kwargs['action'] = 'store_false' if default_value else 'store_true'
+                if 'type' not in arg_kwargs and 'action' not in arg_kwargs and default_value is not None:
+                    arg_kwargs['type'] = default_value.__class__
 
                 self._get_argument_group(group).add_argument(*arg_args, **arg_kwargs)
             if varargs:
