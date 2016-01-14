@@ -18,6 +18,7 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 import argparse
 import functools
 import inspect
+import os
 import re
 import sys
 import types
@@ -84,7 +85,7 @@ class TaskManager(object):
         self.action_subparser = self.parser.add_subparsers(title='Action')
 
         # Exception handling
-        self.should_raise_exceptions = False
+        self.should_raise_exceptions = int(os.environ.get('TASKR_RAISE_EXCEPTION', '0')) != 0
         self.exit_code = 0
 
         # Executing info

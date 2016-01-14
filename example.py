@@ -62,5 +62,10 @@ def _sum(*numbers, start=0):
     print(sum(numbers, start))
 
 
+@task
+def exception():
+    raise ValueError('Exception Test')
+
+
 if __name__ == '__main__':
     task.dispatch()
