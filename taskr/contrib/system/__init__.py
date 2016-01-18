@@ -14,9 +14,13 @@
 # limitations under the License.
 #
 from __future__ import unicode_literals, division, absolute_import, print_function
+
+import os
 import shlex
 import subprocess
 import sys
+from contextlib import contextmanager
+
 import six
 
 
@@ -125,3 +129,57 @@ def has_command(command):
     """
     stdout, _, return_code = run('which {}'.format(command), should_return_returncode=True)
     return len(stdout) != 0 and return_code == 0
+
+
+@contextmanager
+def environ_context(**environ_variables):
+    """
+    >>> import os
+    >>> path = os.environ['PATH']
+    >>> 'ANSWER' in os.environ
+    False
+    >>> with environ_context(PATH='/bin', ANSWER='42'):
+    ...     os.environ['PATH']
+    ...     os.environ['PATH'] == path
+    ...     os.environ['ANSWER']
+    '/bin'
+    False
+    '42'
+    >>> os.environ['PATH'] == path
+    True
+    >>> 'ANSWER' in os.environ
+    False
+    >>> with environ_context(PATH='/bin'):
+    ...     'ANSWER' in os.environ
+    ...     print('-'*10)
+    ...     with environ_context(PATH='/usr/bin', ANSWER='42'):
+    ...         os.environ['ANSWER']
+    ...         os.environ['PATH']
+    ...     print('-'*10)
+    ...     'ANSWER' in os.environ
+    ...     os.environ['PATH']
+    False
+    ----------
+    '42'
+    '/usr/bin'
+    ----------
+    False
+    '/bin'
+    >>> os.environ['PATH'] == path
+    True
+
+    :param environ_variables: environs
+    """
+    old_enivrons = {}
+    for environ_var_name, environ_var_value in six.iteritems(environ_variables):
+        if environ_var_name in os.environ:
+            old_enivrons[environ_var_name] = os.environ[environ_var_name]
+        os.environ[environ_var_name] = environ_var_value
+
+    yield
+
+    for environ_var_name in six.iterkeys(environ_variables):
+        if environ_var_name in old_enivrons:
+            os.environ[environ_var_name] = old_enivrons[environ_var_name]
+        else:
+            del os.environ[environ_var_name]
