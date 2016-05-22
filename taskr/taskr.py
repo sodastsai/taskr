@@ -20,7 +20,7 @@ import functools
 
 import six
 
-from .utils import function_args_count
+from .utils import parameters_of_function
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -30,7 +30,7 @@ def task_manager_decorator(tm_method):
     :type tm_method: function
     :rtype: function
     """
-    args_count = function_args_count(tm_method)
+    args_count = len(parameters_of_function(tm_method))
     assert args_count >= 2, "Unsupported method signature of TaskManager"
 
     if args_count > 2:

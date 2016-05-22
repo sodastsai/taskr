@@ -18,29 +18,43 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 
 import unittest
 
-from taskr.utils import function_args_count
+from taskr.utils import ParameterClass, parameters_of_function
 
 
 class UtilsTests(unittest.TestCase):
-    def test_function_args_count(self):
-        class SomeObject(object):
-            def yo(self, task):
-                pass
 
-            def hi(self, task, name):
-                pass
+    def test_parameters_of_function(self):
+        # noinspection PyUnusedLocal
+        def run(origin, destination, vehicle, speed=1, cabinet=None, *args, **kwargs): pass
 
-            def hello(self, task, *args, **kwargs):
-                pass
+        parameters = list(parameters_of_function(run).values())
+        """:type: list[ParameterClass]"""
+        self.assertEqual(7, len(parameters))
 
-            def hey(self, task, *args):
-                pass
+        self.assertEqual("origin", parameters[0].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, parameters[0].kind)
+        self.assertEqual(ParameterClass.empty, parameters[0].default)
 
-            def ciao(self, task, **kwargs):
-                pass
+        self.assertEqual("destination", parameters[1].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, parameters[1].kind)
+        self.assertEqual(ParameterClass.empty, parameters[1].default)
 
-        self.assertEqual(function_args_count(SomeObject.yo), 2)
-        self.assertEqual(function_args_count(SomeObject.hi), 3)
-        self.assertEqual(function_args_count(SomeObject.hello), 4)
-        self.assertEqual(function_args_count(SomeObject.hey), 3)
-        self.assertEqual(function_args_count(SomeObject.ciao), 3)
+        self.assertEqual("vehicle", parameters[2].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, parameters[2].kind)
+        self.assertEqual(ParameterClass.empty, parameters[2].default)
+
+        self.assertEqual("speed", parameters[3].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, parameters[3].kind)
+        self.assertEqual(1, parameters[3].default)
+
+        self.assertEqual("cabinet", parameters[4].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, parameters[4].kind)
+        self.assertIsNone(parameters[4].default)
+
+        self.assertEqual("args", parameters[5].name)
+        self.assertEqual(ParameterClass.VAR_POSITIONAL, parameters[5].kind)
+        self.assertEqual(ParameterClass.empty, parameters[5].default)
+
+        self.assertEqual("kwargs", parameters[6].name)
+        self.assertEqual(ParameterClass.VAR_KEYWORD, parameters[6].kind)
+        self.assertEqual(ParameterClass.empty, parameters[6].default)
