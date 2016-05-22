@@ -28,6 +28,7 @@ setup(name='taskr',
       url='https://github.com/sodastsai/taskr',
       long_description='''taskr - python command line utility helper''',
       packages=find_packages(),
+      test_suite="tests",
       install_requires=[
           'six>=1.8.0',
       ],

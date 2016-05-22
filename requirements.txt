@@ -1,0 +1,6 @@
+coverage==4.1
+pluggy==0.3.1
+py==1.4.31
+six==1.10.0
+tox==2.3.1
+virtualenv==15.0.1
