@@ -70,11 +70,14 @@ class TaskManager(object):
         """:type: list[Task]"""
         self.main_task = None  # type: Task
 
+    def __repr__(self):
+        return "<{} {}>".format(self.__class__.__name__, self)
+
     def __str__(self):
-        string = "TaskManager: tasks=[{}]".format(",".join((task.name for task in self.tasks)))
+        string = "tasks=[{}]".format(",".join((task.name for task in self.tasks)))
         if self.main_task:
             string += ", main={}".format(self.main_task.name)
-        return "<{}>".format(string)
+        return string
 
     def get_or_create_task_object(self, task_or_callable):
         """
@@ -138,10 +141,10 @@ class Task(object):
         self.task_manager = task_manager
 
     def __repr__(self):
-        return "<Task: {}>".format(self.name)
+        return "<{} {}>".format(self.__class__.__name__, self)
 
     def __str__(self):
-        return repr(self)
+        return self.name
 
     def __call__(self, *args, **kwargs):
         return self.callable(*args, **kwargs)

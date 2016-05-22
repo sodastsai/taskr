@@ -33,7 +33,8 @@ class TaskManagerTests(unittest.TestCase):
         @self.task_manager
         def run(): pass
 
-        self.assertEqual("<TaskManager: tasks=[run]>", six.text_type(self.task_manager))
+        self.assertEqual("tasks=[run]", six.text_type(self.task_manager))
+        self.assertEqual("<TaskManager tasks=[run]>", "{!r}".format(self.task_manager))
 
     def test_string_with_main(self):
         @self.task_manager
@@ -42,7 +43,8 @@ class TaskManagerTests(unittest.TestCase):
         @self.task_manager.main
         def fly(): pass
 
-        self.assertEqual("<TaskManager: tasks=[run,fly], main=fly>", six.text_type(self.task_manager))
+        self.assertEqual("tasks=[run,fly], main=fly", six.text_type(self.task_manager))
+        self.assertEqual("<TaskManager tasks=[run,fly], main=fly>", "{!r}".format(self.task_manager))
 
 
 class TaskManagerDecoratorTests(TaskManagerTests):

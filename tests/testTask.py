@@ -41,4 +41,5 @@ class TaskCreationTests(unittest.TestCase):
         self.assertEqual("run", self.task.name)
 
     def test_string(self):
-        self.assertEqual("<Task: run>", six.text_type(self.task))
+        self.assertEqual("run", six.text_type(self.task))
+        self.assertEqual("<Task run>", "{!r}".format(self.task))
