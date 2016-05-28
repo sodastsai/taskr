@@ -43,3 +43,27 @@ class TaskCreationTests(unittest.TestCase):
     def test_string(self):
         self.assertEqual("run", six.text_type(self.task))
         self.assertEqual("<Task run>", "{!r}".format(self.task))
+
+
+class TaskSetArgumentTests(unittest.TestCase):
+
+    def setUp(self):
+        super(TaskSetArgumentTests, self).setUp()
+        self.task_manager = TaskManager()
+        self.task = Task(run, self.task_manager)
+
+    def test_set_argument(self):
+        self.task.set_group_argument("group1", "name", action="store_true")
+        self.task.set_group_argument("group2", "--value", nargs="?")
+        self.task.set_group_argument("group2", "age", dest="year")
+        self.task.set_argument("--yo", dest="XD", action="store_false")
+        self.assertDictEqual({
+            "name": ("group1", ("name",), {"action": "store_true"}),
+            "value": ("group2", ("--value",), {"nargs": "?"}),
+            "year": ("group2", ("age",), {"dest": "year"}),
+            "XD": ("*", ("--yo",), {"dest": "XD", "action": "store_false"}),
+        }, self.task.custom_arguments)
+
+        with self.assertRaises(ValueError) as raises_context_manager:
+            self.task.set_argument("date", dest="year", action="store_false")
+        self.assertEqual("Got dupilcated destination: year", str(raises_context_manager.exception))

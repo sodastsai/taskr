@@ -126,3 +126,21 @@ class TaskManagerDecoratorTests(TaskManagerTests):
             return "Run from {} to {}".format(origin, destination)
 
         self.assertEqual("Run", run.name)
+
+    def test_set_argument(self):
+        @self.task_manager.set_argument("origin", help="XD")
+        def run(origin, destination):
+            return "Run from {} to {}".format(origin, destination)
+
+        self.assertDictEqual({
+            "origin": ("*", ("origin",), {"help": "XD"}),
+        }, run.custom_arguments)
+
+    def test_set_group_argument(self):
+        @self.task_manager.set_group_argument("location", "origin", help="XD")
+        def run(origin, destination):
+            return "Run from {} to {}".format(origin, destination)
+
+        self.assertDictEqual({
+            "origin": ("location", ("origin",), {"help": "XD"}),
+        }, run.custom_arguments)

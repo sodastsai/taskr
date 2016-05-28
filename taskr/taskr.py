@@ -123,6 +123,28 @@ class TaskManager(object):
         task.name = name
         return task
 
+    @task_manager_decorator
+    def set_argument(self, task, *args, **kwargs):
+        """
+        :type task: Task
+        :type args: tuple
+        :type kwargs: dict
+        :rtype: Task
+        """
+        task.set_argument(*args, **kwargs)
+        return task
+
+    @task_manager_decorator
+    def set_group_argument(self, task, *args, **kwargs):
+        """
+        :type task: Task
+        :type args: tuple
+        :type kwargs: dict
+        :rtype: Task
+        """
+        task.set_group_argument(*args, **kwargs)
+        return task
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -139,6 +161,8 @@ class Task(object):
         self.name = self.callable.__name__.replace("_", "-").lower()
 
         self.task_manager = task_manager
+        self.custom_arguments = {}
+        """:type : dict[str, tuple]"""
 
     def __repr__(self):
         return "<{} {}>".format(self.__class__.__name__, self)
@@ -148,3 +172,33 @@ class Task(object):
 
     def __call__(self, *args, **kwargs):
         return self.callable(*args, **kwargs)
+
+    def set_group_argument(self, group, *args, **kwargs):
+        # Check argument Type
+        args_count = len(args)
+        assert args_count >= 1, "Expect at least one name or flag when calling `set_group_argument`."
+        positional_argument = all((not arg.startswith("-") for arg in args))
+
+        # Find destination of this argument
+        if positional_argument:
+            dest = kwargs.get("dest", args[0])
+        else:  # Optional
+            dest = kwargs.get('dest', None)
+            if not dest:
+                # Find from args .... use the name of first "--" arguments
+                for arg in args:
+                    if not arg.startswith('--'):
+                        continue
+                    dest = arg.lstrip('-').replace('-', '_')
+                    break
+            if not dest:
+                # Raise exception
+                raise ValueError("Cannot find destination of the flags '{}' for {}".format(', '.join(args), self))
+
+        # Register
+        if dest in self.custom_arguments:
+            raise ValueError("Got dupilcated destination: {}".format(dest))
+        self.custom_arguments[dest] = (group, args, kwargs)
+
+    def set_argument(self, *args, **kwargs):
+        self.set_group_argument('*', *args, **kwargs)
