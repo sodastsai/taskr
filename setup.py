@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2014-2015 sodastsai
+# Copyright 2014-2016 sodastsai
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ from __future__ import unicode_literals, division, absolute_import, print_functi
 from setuptools import setup, find_packages
 
 setup(name='taskr',
-      version='0.2.45',
+      version='0.3.0',
       description='Python Command Line Utility',
       author='sodastsai',
       author_email='sodas2002@gmail.com',
@@ -30,7 +30,7 @@ setup(name='taskr',
       packages=find_packages(),
       test_suite="tests",
       install_requires=[
-          'six>=1.8.0',
+          'six>=1.10.0',
       ],
       classifiers=[
           'Development Status :: 3 - Alpha',
@@ -44,6 +44,7 @@ setup(name='taskr',
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
           'Programming Language :: Python :: 3.4',
+          'Programming Language :: Python :: 3.5',
           'Topic :: Software Development',
           'Topic :: Utilities',
       ])
