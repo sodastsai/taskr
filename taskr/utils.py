@@ -37,7 +37,7 @@ class InspectParameter(object):
         argspec = inspect.getargspec(func)
         parameters = OrderedDict()
 
-        positional_args_count = len(argspec.args) - len(argspec.defaults)
+        positional_args_count = len(argspec.args) - len(argspec.defaults or [])
         for positional_arg in argspec.args[:positional_args_count]:
             parameters[positional_arg] = cls(positional_arg, cls.POSITIONAL_OR_KEYWORD)
         for idx, default_args in enumerate(argspec.args[positional_args_count:]):
