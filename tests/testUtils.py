@@ -58,3 +58,27 @@ class UtilsTests(unittest.TestCase):
         self.assertEqual("kwargs", parameters[6].name)
         self.assertEqual(ParameterClass.VAR_KEYWORD, parameters[6].kind)
         self.assertEqual(ParameterClass.empty, parameters[6].default)
+
+    def test_callable(self):
+        class Adder(object):
+            def __init__(self, base=0):
+                self.value = base
+
+            def __call__(self, value, comment=None):
+                self.value += value
+                if comment:
+                    print(comment)
+                return self.value
+
+        adder = Adder()
+        parameters = list(parameters_of_function(adder).values())
+
+        self.assertEqual(2, len(parameters))
+
+        self.assertEqual("value", parameters[0].name)
+        self.assertEqual(ParameterClass.empty, parameters[0].default)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, parameters[0].kind)
+
+        self.assertEqual("comment", parameters[1].name)
+        self.assertIsNone(parameters[1].default)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, parameters[1].kind)

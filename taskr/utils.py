@@ -17,6 +17,8 @@
 from __future__ import unicode_literals, print_function, absolute_import, division
 
 import inspect
+import types
+
 from collections import OrderedDict
 
 import six
@@ -33,6 +35,9 @@ class InspectParameter(object):
         :type func: function
         :rtype: dict[str, InspectParameter]
         """
+        # Get the real function of callable objects
+        func_is_function = isinstance(func, types.FunctionType)
+        func = func if func_is_function else func.__call__
         # noinspection PyDeprecation
         argspec = inspect.getargspec(func)
         parameters = OrderedDict()
@@ -46,6 +51,11 @@ class InspectParameter(object):
             parameters[argspec.varargs] = cls(argspec.varargs, cls.VAR_POSITIONAL)
         if argspec.keywords:
             parameters[argspec.keywords] = cls(argspec.keywords, cls.VAR_KEYWORD)
+
+        # Remove the `self` argument if necessary
+        if not func_is_function:
+            parameters.popitem(last=False)
+
         return parameters
 
     POSITIONAL_ONLY = 0
