@@ -27,6 +27,11 @@ class UtilsTests(unittest.TestCase):
         # noinspection PyUnusedLocal
         def run(origin, destination, vehicle, speed=1, cabinet=None, *args, **kwargs): pass
 
+        parameters_dict = parameters_of_function(run)
+        parameter_names = list(parameters_dict.keys())
+        self.assertListEqual(["origin", "destination", "vehicle", "speed", "cabinet", "args", "kwargs"],
+                             parameter_names)
+
         parameters = list(parameters_of_function(run).values())
         """:type: list[ParameterClass]"""
         self.assertEqual(7, len(parameters))
