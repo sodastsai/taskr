@@ -20,6 +20,7 @@ import functools
 
 import six
 
+from .decorators.once import oncemethod
 from .parameters import parameters_of_function, ParameterClass
 
 
@@ -181,10 +182,12 @@ class Task(object):
         return self.callable(*args, **kwargs)
 
     @property
+    @oncemethod("_raw_parameters")
     def raw_parameters(self):
         return parameters_of_function(self.callable)
 
     @property
+    @oncemethod
     def raw_parameters_has_var_keyword(self):
         for raw_parameter in self.raw_parameters.values():
             if raw_parameter.kind == ParameterClass.VAR_KEYWORD:
