@@ -16,7 +16,9 @@
 
 from __future__ import unicode_literals, print_function, absolute_import, division
 
+import argparse
 import unittest
+from collections import OrderedDict
 
 import six
 
@@ -25,7 +27,7 @@ from taskr.parameters import ParameterClass
 
 
 # noinspection PyUnusedLocal
-def run(origin, destination, speed=1, *args, **kwargs):
+def run(origin, destination, speed=1, quiet=False, *args, **kwargs):
     return "Run from {} to {}".format(origin, destination)
 
 
@@ -52,7 +54,8 @@ class TaskCreationTests(unittest.TestCase):
 
     def test_raw_parameters(self):
         raw_parameters = list(self.task.raw_parameters.values())
-        self.assertEqual(5, len(raw_parameters))
+        self.assertEqual(6, len(raw_parameters))
+        self.assertTrue(self.task.has_var_keyword)
 
         self.assertEqual("origin", raw_parameters[0].name)
         self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[0].kind)
@@ -66,13 +69,17 @@ class TaskCreationTests(unittest.TestCase):
         self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[2].kind)
         self.assertEqual(1, raw_parameters[2].default)
 
-        self.assertEqual("args", raw_parameters[3].name)
-        self.assertEqual(ParameterClass.VAR_POSITIONAL, raw_parameters[3].kind)
-        self.assertEqual(ParameterClass.empty, raw_parameters[3].default)
+        self.assertEqual("quiet", raw_parameters[3].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[3].kind)
+        self.assertEqual(False, raw_parameters[3].default)
 
-        self.assertEqual("kwargs", raw_parameters[4].name)
-        self.assertEqual(ParameterClass.VAR_KEYWORD, raw_parameters[4].kind)
+        self.assertEqual("args", raw_parameters[4].name)
+        self.assertEqual(ParameterClass.VAR_POSITIONAL, raw_parameters[4].kind)
         self.assertEqual(ParameterClass.empty, raw_parameters[4].default)
+
+        self.assertEqual("kwargs", raw_parameters[5].name)
+        self.assertEqual(ParameterClass.VAR_KEYWORD, raw_parameters[5].kind)
+        self.assertEqual(ParameterClass.empty, raw_parameters[5].default)
 
 
 class TaskSetArgumentTests(unittest.TestCase):
@@ -87,19 +94,18 @@ class TaskSetArgumentTests(unittest.TestCase):
         self.task.set_group_argument("group2", "--value", nargs="?")
         self.task.set_group_argument("group2", "age", dest="year")
         self.task.set_argument("--yo", dest="XD", action="store_false")
-        self.task.set_argument("speed", action="store")
         self.task.set_group_argument("location", "origin", default="Tokyo")
-        self.assertDictEqual({
-            "origin": ("location", ("origin",), {"default": "Tokyo"}),
-            "destination": ("*", ("destination",), {}),
-            "speed": ("*", ("speed",), {"action": "store"}),
-            "args": ("*", ("args",), {}),
-            "kwargs": ("*", ("kwargs",), {}),
-            "name": ("group1", ("name",), {"action": "store_true"}),
-            "value": ("group2", ("--value",), {"nargs": "?"}),
-            "year": ("group2", ("age",), {"dest": "year"}),
-            "XD": ("*", ("--yo",), {"dest": "XD", "action": "store_false"}),
-        }, self.task.registered_arguments)
+        self.assertEqual(OrderedDict((
+            ("origin", ("location", ("origin",), {"default": "Tokyo"})),
+            ("destination", ("*", ("destination",), {"type": six.text_type})),
+            ("speed", ("*", ("-s", "--speed",), {"type": int, "default": 1, "required": False})),
+            ("quiet", ("*", ("-q", "--quiet",), {"action": "store_true", "default": False, "required": False})),
+            ("args", ("*", ("args",), {"nargs": argparse.REMAINDER})),
+            ("name", ("group1", ("name",), {"action": "store_true"})),
+            ("value", ("group2", ("--value",), {"nargs": "?"})),
+            ("year", ("group2", ("age",), {"dest": "year"})),
+            ("XD", ("*", ("--yo",), {"dest": "XD", "action": "store_false"})),
+        )), self.task.registered_arguments)
 
         task2 = Task(fly, self.task_manager)
         with self.assertRaises(ValueError) as exception_cm:

@@ -16,7 +16,9 @@
 
 from __future__ import unicode_literals, print_function, absolute_import, division
 
+import argparse
 import functools
+from collections import OrderedDict
 
 import six
 
@@ -164,13 +166,34 @@ class Task(object):
         self.task_manager = task_manager
 
         # Parse default registered arguments from the callable object
-        self.registered_arguments = {}
+        self.has_var_keyword = False
+        self.registered_arguments = OrderedDict()
         """:type : dict[str, tuple]"""
         for arg_name, parameter in self.raw_parameters.items():
+            parameter_args = (arg_name,)
             parameter_kwargs = {}
+            # default value and optional
             if parameter.default != ParameterClass.empty:
                 parameter_kwargs["default"] = parameter.default
-            self.registered_arguments[arg_name] = ("*", (arg_name,), parameter_kwargs)
+                parameter_kwargs["required"] = False
+                parameter_args = ("-{}".format(arg_name[0]), "--{}".format(arg_name.replace("_", "-")))
+            # action of this parameter
+            if isinstance(parameter.default, bool):
+                parameter_kwargs["action"] = "store_false" if parameter.default else "store_true"
+            if "action" not in parameter_kwargs or parameter_kwargs["action"] in ("store", "append"):
+                if parameter.default != ParameterClass.empty and parameter.default is not None:
+                    parameter_kwargs["type"] = parameter.default.__class__
+                else:
+                    parameter_kwargs["type"] = six.text_type
+            # kind of this parameter
+            if parameter.kind == ParameterClass.VAR_POSITIONAL:
+                parameter_kwargs["nargs"] = argparse.REMAINDER
+                parameter_kwargs.pop("type")
+            if parameter.kind == ParameterClass.VAR_KEYWORD:
+                self.has_var_keyword = True
+                continue
+
+            self.registered_arguments[arg_name] = ("*", parameter_args, parameter_kwargs)
 
     def __repr__(self):
         return "<{} {}>".format(self.__class__.__name__, self)
@@ -185,14 +208,6 @@ class Task(object):
     @oncemethod("_raw_parameters")
     def raw_parameters(self):
         return parameters_of_function(self.callable)
-
-    @property
-    @oncemethod
-    def raw_parameters_has_var_keyword(self):
-        for raw_parameter in self.raw_parameters.values():
-            if raw_parameter.kind == ParameterClass.VAR_KEYWORD:
-                return True
-        return False
 
     def set_group_argument(self, group, *args, **kwargs):
         # Check argument Type
@@ -217,7 +232,7 @@ class Task(object):
                 raise ValueError("Cannot find destination of the flags '{}' for {}".format(', '.join(args), self))
 
         # Register
-        if not self.raw_parameters_has_var_keyword and dest not in self.raw_parameters:
+        if not self.has_var_keyword and dest not in self.raw_parameters:
             raise ValueError("\"{}\" is not allowed to be added as an argument of {}."
                              " {} doesn't accept extra keyword args.".format(dest, self.name, self.name))
         self.registered_arguments[dest] = (group, args, kwargs)

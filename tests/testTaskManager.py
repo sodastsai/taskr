@@ -17,6 +17,7 @@
 from __future__ import unicode_literals, print_function, absolute_import, division
 
 import unittest
+from collections import OrderedDict
 
 import six
 
@@ -132,17 +133,17 @@ class TaskManagerDecoratorTests(TaskManagerTests):
         def run(origin, destination):
             return "Run from {} to {}".format(origin, destination)
 
-        self.assertDictEqual({
-            "origin": ("*", ("origin",), {"help": "XD"}),
-            "destination": ("*", ("destination", ), {}),
-        }, run.registered_arguments)
+        self.assertDictEqual(OrderedDict((
+            ("origin", ("*", ("origin",), {"help": "XD"})),
+            ("destination", ("*", ("destination", ), {"type": six.text_type})),
+        )), run.registered_arguments)
 
     def test_set_group_argument(self):
         @self.task_manager.set_group_argument("location", "origin", help="XD")
         def run(origin, destination):
             return "Run from {} to {}".format(origin, destination)
 
-        self.assertDictEqual({
-            "origin": ("location", ("origin",), {"help": "XD"}),
-            "destination": ("*", ("destination",), {}),
-        }, run.registered_arguments)
+        self.assertEqual(OrderedDict((
+            ("origin", ("location", ("origin",), {"help": "XD"})),
+            ("destination", ("*", ("destination",), {"type": six.text_type})),
+        )), run.registered_arguments)
