@@ -20,7 +20,7 @@ import functools
 
 import six
 
-from .parameters import parameters_of_function
+from .parameters import parameters_of_function, ParameterClass
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -161,8 +161,15 @@ class Task(object):
         self.name = self.callable.__name__.replace("_", "-").lower()
 
         self.task_manager = task_manager
-        self.custom_arguments = {}
+
+        # Parse default registered arguments from the callable object
+        self.registered_arguments = {}
         """:type : dict[str, tuple]"""
+        for arg_name, parameter in self.raw_parameters.items():
+            parameter_kwargs = {}
+            if parameter.default != ParameterClass.empty:
+                parameter_kwargs["default"] = parameter.default
+            self.registered_arguments[arg_name] = ("*", (arg_name,), parameter_kwargs)
 
     def __repr__(self):
         return "<{} {}>".format(self.__class__.__name__, self)
@@ -176,6 +183,13 @@ class Task(object):
     @property
     def raw_parameters(self):
         return parameters_of_function(self.callable)
+
+    @property
+    def raw_parameters_has_var_keyword(self):
+        for raw_parameter in self.raw_parameters.values():
+            if raw_parameter.kind == ParameterClass.VAR_KEYWORD:
+                return True
+        return False
 
     def set_group_argument(self, group, *args, **kwargs):
         # Check argument Type
@@ -200,9 +214,10 @@ class Task(object):
                 raise ValueError("Cannot find destination of the flags '{}' for {}".format(', '.join(args), self))
 
         # Register
-        if dest in self.custom_arguments:
-            raise ValueError("Got dupilcated destination: {}".format(dest))
-        self.custom_arguments[dest] = (group, args, kwargs)
+        if not self.raw_parameters_has_var_keyword and dest not in self.raw_parameters:
+            raise ValueError("\"{}\" is not allowed to be added as an argument of {}."
+                             " {} doesn't accept extra keyword args.".format(dest, self.name, self.name))
+        self.registered_arguments[dest] = (group, args, kwargs)
 
     def set_argument(self, *args, **kwargs):
         self.set_group_argument('*', *args, **kwargs)

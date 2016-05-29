@@ -134,7 +134,8 @@ class TaskManagerDecoratorTests(TaskManagerTests):
 
         self.assertDictEqual({
             "origin": ("*", ("origin",), {"help": "XD"}),
-        }, run.custom_arguments)
+            "destination": ("*", ("destination", ), {}),
+        }, run.registered_arguments)
 
     def test_set_group_argument(self):
         @self.task_manager.set_group_argument("location", "origin", help="XD")
@@ -143,4 +144,5 @@ class TaskManagerDecoratorTests(TaskManagerTests):
 
         self.assertDictEqual({
             "origin": ("location", ("origin",), {"help": "XD"}),
-        }, run.custom_arguments)
+            "destination": ("*", ("destination",), {}),
+        }, run.registered_arguments)

@@ -29,6 +29,10 @@ def run(origin, destination, speed=1, *args, **kwargs):
     return "Run from {} to {}".format(origin, destination)
 
 
+def fly(origin, destination):
+    return "Fly from {} to {}".format(origin, destination)
+
+
 class TaskCreationTests(unittest.TestCase):
 
     def setUp(self):
@@ -83,13 +87,22 @@ class TaskSetArgumentTests(unittest.TestCase):
         self.task.set_group_argument("group2", "--value", nargs="?")
         self.task.set_group_argument("group2", "age", dest="year")
         self.task.set_argument("--yo", dest="XD", action="store_false")
+        self.task.set_argument("speed", action="store")
+        self.task.set_group_argument("location", "origin", default="Tokyo")
         self.assertDictEqual({
+            "origin": ("location", ("origin",), {"default": "Tokyo"}),
+            "destination": ("*", ("destination",), {}),
+            "speed": ("*", ("speed",), {"action": "store"}),
+            "args": ("*", ("args",), {}),
+            "kwargs": ("*", ("kwargs",), {}),
             "name": ("group1", ("name",), {"action": "store_true"}),
             "value": ("group2", ("--value",), {"nargs": "?"}),
             "year": ("group2", ("age",), {"dest": "year"}),
             "XD": ("*", ("--yo",), {"dest": "XD", "action": "store_false"}),
-        }, self.task.custom_arguments)
+        }, self.task.registered_arguments)
 
-        with self.assertRaises(ValueError) as raises_context_manager:
-            self.task.set_argument("date", dest="year", action="store_false")
-        self.assertEqual("Got dupilcated destination: year", str(raises_context_manager.exception))
+        task2 = Task(fly, self.task_manager)
+        with self.assertRaises(ValueError) as exception_cm:
+            task2.set_argument("speed", default=1)
+        self.assertEqual("\"speed\" is not allowed to be added as an argument of fly. "
+                         "fly doesn't accept extra keyword args.", str(exception_cm.exception))
