@@ -173,6 +173,10 @@ class Task(object):
     def __call__(self, *args, **kwargs):
         return self.callable(*args, **kwargs)
 
+    @property
+    def raw_parameters(self):
+        return parameters_of_function(self.callable)
+
     def set_group_argument(self, group, *args, **kwargs):
         # Check argument Type
         args_count = len(args)

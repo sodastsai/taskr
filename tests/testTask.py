@@ -21,9 +21,11 @@ import unittest
 import six
 
 from taskr.taskr import Task, TaskManager
+from taskr.utils import ParameterClass
 
 
-def run(origin, destination):
+# noinspection PyUnusedLocal
+def run(origin, destination, speed=1, *args, **kwargs):
     return "Run from {} to {}".format(origin, destination)
 
 
@@ -43,6 +45,30 @@ class TaskCreationTests(unittest.TestCase):
     def test_string(self):
         self.assertEqual("run", six.text_type(self.task))
         self.assertEqual("<Task run>", "{!r}".format(self.task))
+
+    def test_raw_parameters(self):
+        raw_parameters = list(self.task.raw_parameters.values())
+        self.assertEqual(5, len(raw_parameters))
+
+        self.assertEqual("origin", raw_parameters[0].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[0].kind)
+        self.assertEqual(ParameterClass.empty, raw_parameters[0].default)
+
+        self.assertEqual("destination", raw_parameters[1].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[1].kind)
+        self.assertEqual(ParameterClass.empty, raw_parameters[1].default)
+
+        self.assertEqual("speed", raw_parameters[2].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[2].kind)
+        self.assertEqual(1, raw_parameters[2].default)
+
+        self.assertEqual("args", raw_parameters[3].name)
+        self.assertEqual(ParameterClass.VAR_POSITIONAL, raw_parameters[3].kind)
+        self.assertEqual(ParameterClass.empty, raw_parameters[3].default)
+
+        self.assertEqual("kwargs", raw_parameters[4].name)
+        self.assertEqual(ParameterClass.VAR_KEYWORD, raw_parameters[4].kind)
+        self.assertEqual(ParameterClass.empty, raw_parameters[4].default)
 
 
 class TaskSetArgumentTests(unittest.TestCase):
