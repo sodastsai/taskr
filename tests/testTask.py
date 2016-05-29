@@ -21,7 +21,7 @@ import unittest
 import six
 
 from taskr.taskr import Task, TaskManager
-from taskr.utils import ParameterClass
+from taskr.parameters import ParameterClass
 
 
 # noinspection PyUnusedLocal

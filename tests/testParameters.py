@@ -18,7 +18,7 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 
 import unittest
 
-from taskr.utils import ParameterClass, parameters_of_function
+from taskr.parameters import ParameterClass, parameters_of_function
 
 
 class UtilsTests(unittest.TestCase):

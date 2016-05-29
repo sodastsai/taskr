@@ -20,7 +20,7 @@ import functools
 
 import six
 
-from .utils import parameters_of_function
+from .parameters import parameters_of_function
 
 
 # ----------------------------------------------------------------------------------------------------------------------
