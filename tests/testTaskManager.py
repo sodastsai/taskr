@@ -16,12 +16,13 @@
 
 from __future__ import unicode_literals, print_function, absolute_import, division
 
+import argparse
 import unittest
 from collections import OrderedDict
 
 import six
 
-from taskr.taskr import Task, TaskManager, task_manager_decorator
+from taskr.taskr import Task, TaskManager, task_manager_decorator, TaskrHelpFormatter
 
 
 class TaskManagerTests(unittest.TestCase):
@@ -46,6 +47,14 @@ class TaskManagerTests(unittest.TestCase):
 
         self.assertEqual("tasks=[run,fly], main=fly", six.text_type(self.task_manager))
         self.assertEqual("<TaskManager tasks=[run,fly], main=fly>", "{!r}".format(self.task_manager))
+
+    def test_argparser(self):
+        self.assertEqual(TaskrHelpFormatter, self.task_manager.parser.formatter_class)
+        self.assertEqual("resolve", self.task_manager.parser.conflict_handler)
+
+        action_subparser = self.task_manager.parser._actions[1]
+        self.assertEqual(action_subparser, self.task_manager.action_subparser)
+        self.assertIsInstance(action_subparser, argparse._SubParsersAction)
 
 
 class TaskManagerDecoratorTests(TaskManagerTests):

@@ -22,7 +22,7 @@ from collections import OrderedDict
 
 import six
 
-from taskr.taskr import Task, TaskManager
+from taskr.taskr import Task, TaskManager, TaskrHelpFormatter
 from taskr.parameters import ParameterClass
 
 
@@ -112,3 +112,91 @@ class TaskSetArgumentTests(unittest.TestCase):
             task2.set_argument("speed", default=1)
         self.assertEqual("\"speed\" is not allowed to be added as an argument of fly. "
                          "fly doesn't accept extra keyword args.", str(exception_cm.exception))
+
+
+class TaskArgumentParserTests(unittest.TestCase):
+
+    def setUp(self):
+        super(TaskArgumentParserTests, self).setUp()
+        self.task_manager = TaskManager()
+        self.task = Task(run, self.task_manager)
+
+    def test_setup_argparser(self):
+        self.task.setup_argparser()
+
+        self.assertEqual(TaskrHelpFormatter, self.task.parser.formatter_class)
+        self.assertEqual("resolve", self.task.parser.conflict_handler)
+        self.assertEqual(self.task, self.task.parser.get_default("__task__"))
+
+        actions = OrderedDict(((action.dest, action) for action in self.task.parser._actions))
+        """:type: dict[str, argparse.Action]"""
+        self.assertEqual(6, len(actions))
+        self.assertSequenceEqual(("help", "origin", "destination", "speed", "quiet", "args"), list(actions.keys()))
+
+        self.assertIsInstance(actions["help"], argparse._HelpAction)
+        self.assertSequenceEqual(("-h", "--help"), actions["help"].option_strings)
+
+        self.assertIsInstance(actions["origin"], argparse._StoreAction)
+        self.assertEqual(None, actions["origin"].choices)
+        self.assertEqual(None, actions["origin"].const)
+        self.assertEqual(None, actions["origin"].default)
+        self.assertEqual("origin", actions["origin"].dest)
+        self.assertEqual(None, actions["origin"].help)
+        self.assertEqual(None, actions["origin"].metavar)
+        self.assertEqual(None, actions["origin"].nargs)
+        self.assertEqual(None, actions["origin"].help)
+        self.assertEqual([], actions["origin"].option_strings)
+        self.assertEqual(True, actions["origin"].required)
+        self.assertEqual(six.text_type, actions["origin"].type)
+
+        self.assertIsInstance(actions["destination"], argparse._StoreAction)
+        self.assertEqual(None, actions["destination"].choices)
+        self.assertEqual(None, actions["destination"].const)
+        self.assertEqual(None, actions["destination"].default)
+        self.assertEqual("destination", actions["destination"].dest)
+        self.assertEqual(None, actions["destination"].help)
+        self.assertEqual(None, actions["destination"].metavar)
+        self.assertEqual(None, actions["destination"].nargs)
+        self.assertEqual(None, actions["destination"].help)
+        self.assertEqual([], actions["destination"].option_strings)
+        self.assertEqual(True, actions["destination"].required)
+        self.assertEqual(six.text_type, actions["destination"].type)
+
+        self.assertIsInstance(actions["speed"], argparse._StoreAction)
+        self.assertEqual(None, actions["speed"].choices)
+        self.assertEqual(None, actions["speed"].const)
+        self.assertEqual(1, actions["speed"].default)
+        self.assertEqual("speed", actions["speed"].dest)
+        self.assertEqual(None, actions["speed"].help)
+        self.assertEqual(None, actions["speed"].metavar)
+        self.assertEqual(None, actions["speed"].nargs)
+        self.assertEqual(None, actions["speed"].help)
+        self.assertEqual(["-s", "--speed"], actions["speed"].option_strings)
+        self.assertEqual(False, actions["speed"].required)
+        self.assertEqual(int, actions["speed"].type)
+
+        self.assertIsInstance(actions["quiet"], argparse._StoreTrueAction)
+        self.assertEqual(None, actions["quiet"].choices)
+        self.assertEqual(True, actions["quiet"].const)
+        self.assertEqual(False, actions["quiet"].default)
+        self.assertEqual("quiet", actions["quiet"].dest)
+        self.assertEqual(None, actions["quiet"].help)
+        self.assertEqual(None, actions["quiet"].metavar)
+        self.assertEqual(0, actions["quiet"].nargs)
+        self.assertEqual(None, actions["quiet"].help)
+        self.assertEqual(["-q", "--quiet"], actions["quiet"].option_strings)
+        self.assertEqual(False, actions["quiet"].required)
+        self.assertEqual(None, actions["quiet"].type)
+
+        self.assertIsInstance(actions["args"], argparse._StoreAction)
+        self.assertEqual(None, actions["args"].choices)
+        self.assertEqual(None, actions["args"].const)
+        self.assertEqual(None, actions["args"].default)
+        self.assertEqual("args", actions["args"].dest)
+        self.assertEqual(None, actions["args"].help)
+        self.assertEqual(None, actions["args"].metavar)
+        self.assertEqual(argparse.REMAINDER, actions["args"].nargs)
+        self.assertEqual(None, actions["args"].help)
+        self.assertEqual([], actions["args"].option_strings)
+        self.assertEqual(True, actions["args"].required)
+        self.assertEqual(None, actions["args"].type)

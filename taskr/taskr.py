@@ -63,6 +63,16 @@ def task_manager_decorator(tm_method):
     return wrapper
 
 
+class TaskrHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+    pass
+
+
+_argparser_init_kwargs = {
+    "formatter_class": TaskrHelpFormatter,
+    "conflict_handler": "resolve",
+}
+
+
 @six.python_2_unicode_compatible
 class TaskManager(object):
 
@@ -72,6 +82,10 @@ class TaskManager(object):
         self.tasks = []
         """:type: list[Task]"""
         self.main_task = None  # type: Task
+
+        # Argument parsers
+        self.parser = argparse.ArgumentParser(**_argparser_init_kwargs)
+        self.action_subparser = self.parser.add_subparsers(title='Action')
 
     def __repr__(self):
         return "<{} {}>".format(self.__class__.__name__, self)
@@ -203,6 +217,26 @@ class Task(object):
 
     def __call__(self, *args, **kwargs):
         return self.callable(*args, **kwargs)
+
+    @property
+    @oncemethod("_parser")
+    def parser(self):
+        parser = self.task_manager.action_subparser.add_parser(self.name, **_argparser_init_kwargs)
+        """:type: argparse.ArgumentParser"""
+        parser.set_defaults(__task__=self)
+        return parser
+
+    def setup_argparser(self):
+        parsers_groups = {"*": self.parser}
+        """:type : dict[str, argparse.ArgumentParser]"""
+
+        def create_argument_group(argument_group):
+            return self.parser.add_argument_group(title=argument_group)
+
+        for group, add_args, add_kwargs in self.registered_arguments.values():
+            parsers_groups.setdefault(group, create_argument_group(group)).add_argument(*add_args, **add_kwargs)
+
+    # Parameters
 
     @property
     @oncemethod("_raw_parameters")
