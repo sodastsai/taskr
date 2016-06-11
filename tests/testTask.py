@@ -120,18 +120,19 @@ class TaskArgumentParserTests(unittest.TestCase):
         super(TaskArgumentParserTests, self).setUp()
         self.task_manager = TaskManager()
         self.task = Task(run, self.task_manager)
-
-    def test_setup_argparser(self):
+        self.task.set_argument("-a", "--answer", default=42, type=int)
         self.task.setup_argparser()
 
+    def test_setup_argparser(self):
         self.assertEqual(TaskrHelpFormatter, self.task.parser.formatter_class)
         self.assertEqual("resolve", self.task.parser.conflict_handler)
         self.assertEqual(self.task, self.task.parser.get_default("__task__"))
 
         actions = OrderedDict(((action.dest, action) for action in self.task.parser._actions))
         """:type: dict[str, argparse.Action]"""
-        self.assertEqual(6, len(actions))
-        self.assertSequenceEqual(("help", "origin", "destination", "speed", "quiet", "args"), list(actions.keys()))
+        self.assertEqual(7, len(actions))
+        self.assertSequenceEqual(("help", "origin", "destination", "speed", "quiet", "args", "answer"),
+                                 list(actions.keys()))
 
         self.assertIsInstance(actions["help"], argparse._HelpAction)
         self.assertSequenceEqual(("-h", "--help"), actions["help"].option_strings)
@@ -200,3 +201,16 @@ class TaskArgumentParserTests(unittest.TestCase):
         self.assertEqual([], actions["args"].option_strings)
         self.assertEqual(True, actions["args"].required)
         self.assertEqual(None, actions["args"].type)
+
+        self.assertIsInstance(actions["answer"], argparse._StoreAction)
+        self.assertEqual(None, actions["answer"].choices)
+        self.assertEqual(None, actions["answer"].const)
+        self.assertEqual(42, actions["answer"].default)
+        self.assertEqual("answer", actions["answer"].dest)
+        self.assertEqual(None, actions["answer"].help)
+        self.assertEqual(None, actions["answer"].metavar)
+        self.assertEqual(None, actions["answer"].nargs)
+        self.assertEqual(None, actions["answer"].help)
+        self.assertEqual(["-a", "--answer"], actions["answer"].option_strings)
+        self.assertEqual(False, actions["answer"].required)
+        self.assertEqual(int, actions["answer"].type)
