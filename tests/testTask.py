@@ -123,6 +123,17 @@ class TaskArgumentParserTests(unittest.TestCase):
         self.task.set_argument("-a", "--answer", default=42, type=int)
         self.task.setup_argparser()
 
+    def test_finalize_argparser(self):
+        task = Task(run, self.task_manager)
+        task.set_argument("--answer", default=42)
+        task.finalize_argparser()
+
+        self.assertTrue(task._argparser_finalized)
+        with self.assertRaises(AssertionError):
+            task.set_argument("--year", default=2016)
+        with self.assertRaises(AssertionError):
+            task.set_group_argument("time", "--year", default=2016)
+
     def test_setup_argparser(self):
         self.assertEqual(TaskrHelpFormatter, self.task.parser.formatter_class)
         self.assertEqual("resolve", self.task.parser.conflict_handler)

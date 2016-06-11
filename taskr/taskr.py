@@ -86,6 +86,7 @@ class TaskManager(object):
         # Argument parsers
         self.parser = argparse.ArgumentParser(**_argparser_init_kwargs)
         self.action_subparser = self.parser.add_subparsers(title='Action')
+        self._tasks_finalized = False
 
     def __repr__(self):
         return "<{} {}>".format(self.__class__.__name__, self)
@@ -110,6 +111,12 @@ class TaskManager(object):
             return task_obj
         else:
             raise ValueError("{} object is not a callable".format(task_or_callable))
+
+    def finalize(self):
+        if not self._tasks_finalized:
+            for task in self.tasks:
+                task.finalize_argparser()
+            self._tasks_finalized = True
 
     # Decorator
 
@@ -181,6 +188,7 @@ class Task(object):
 
         # Parse default registered arguments from the callable object
         self.has_var_keyword = False
+        self._argparser_finalized = False
         self.registered_arguments = OrderedDict()
         """:type : dict[str, tuple]"""
         for arg_name, parameter in self.raw_parameters.items():
@@ -226,7 +234,11 @@ class Task(object):
         parser.set_defaults(__task__=self)
         return parser
 
-    def setup_argparser(self):
+    def finalize_argparser(self):
+        assert not self._argparser_finalized,\
+            "The argument parser of {} has been finalized. Cannot finalize again.".format(self)
+        self._argparser_finalized = True
+
         parsers_groups = {"*": self.parser}
         """:type : dict[str, argparse.ArgumentParser]"""
 
@@ -244,6 +256,9 @@ class Task(object):
         return parameters_of_function(self.callable)
 
     def set_group_argument(self, group, *args, **kwargs):
+        assert not self._argparser_finalized, \
+            "The argument parser of {} has been finalized. Cannot add new arguments.".format(self)
+
         # Check argument Type
         args_count = len(args)
         assert args_count >= 1, "Expect at least one name or flag when calling `set_group_argument`."

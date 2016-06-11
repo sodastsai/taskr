@@ -56,6 +56,19 @@ class TaskManagerTests(unittest.TestCase):
         self.assertEqual(action_subparser, self.task_manager.action_subparser)
         self.assertIsInstance(action_subparser, argparse._SubParsersAction)
 
+    def test_finalize(self):
+        @self.task_manager
+        def run(): pass
+
+        @self.task_manager
+        def fly(): pass
+
+        self.task_manager.finalize()
+        self.assertTrue(self.task_manager._tasks_finalized)
+        self.assertTrue(all((task._argparser_finalized for task in self.task_manager.tasks)))
+        self.assertTrue(run._argparser_finalized)
+        self.assertTrue(fly._argparser_finalized)
+
 
 class TaskManagerDecoratorTests(TaskManagerTests):
 
