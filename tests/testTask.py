@@ -27,11 +27,12 @@ from taskr.parameters import ParameterClass
 
 
 # noinspection PyUnusedLocal
-def run(origin, destination, speed=1, quiet=False, *args, **kwargs):
+def run(origin, destination, speed=1, quiet=False, **kwargs):
     return "Run from {} to {}".format(origin, destination)
 
 
-def fly(origin, destination):
+# noinspection PyUnusedLocal
+def fly(origin, destination, *args):
     return "Fly from {} to {}".format(origin, destination)
 
 
@@ -40,22 +41,24 @@ class TaskCreationTests(unittest.TestCase):
     def setUp(self):
         super(TaskCreationTests, self).setUp()
         self.task_manager = TaskManager()
-        self.task = Task(run, self.task_manager)
+        self.run_task = Task(run, self.task_manager)
+        self.fly_task = Task(fly, self.task_manager)
 
     def test_callable(self):
-        self.assertEqual("Run from Tokyo to Osaka", self.task("Tokyo", "Osaka"))
+        self.assertEqual("Run from Tokyo to Osaka", self.run_task("Tokyo", "Osaka"))
 
     def test_name(self):
-        self.assertEqual("run", self.task.name)
+        self.assertEqual("run", self.run_task.name)
 
     def test_string(self):
-        self.assertEqual("run", six.text_type(self.task))
-        self.assertEqual("<Task run>", "{!r}".format(self.task))
+        self.assertEqual("run", six.text_type(self.run_task))
+        self.assertEqual("<Task run>", "{!r}".format(self.run_task))
 
-    def test_raw_parameters(self):
-        raw_parameters = list(self.task.raw_parameters.values())
-        self.assertEqual(6, len(raw_parameters))
-        self.assertTrue(self.task.has_var_keyword)
+    def test_run_raw_parameters(self):
+        raw_parameters = list(self.run_task.raw_parameters.values())
+        self.assertEqual(5, len(raw_parameters))
+        self.assertTrue(self.run_task.has_var_keyword)
+        self.assertFalse(self.run_task.has_var_positional)
 
         self.assertEqual("origin", raw_parameters[0].name)
         self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[0].kind)
@@ -73,13 +76,27 @@ class TaskCreationTests(unittest.TestCase):
         self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[3].kind)
         self.assertEqual(False, raw_parameters[3].default)
 
-        self.assertEqual("args", raw_parameters[4].name)
-        self.assertEqual(ParameterClass.VAR_POSITIONAL, raw_parameters[4].kind)
+        self.assertEqual("kwargs", raw_parameters[4].name)
+        self.assertEqual(ParameterClass.VAR_KEYWORD, raw_parameters[4].kind)
         self.assertEqual(ParameterClass.empty, raw_parameters[4].default)
 
-        self.assertEqual("kwargs", raw_parameters[5].name)
-        self.assertEqual(ParameterClass.VAR_KEYWORD, raw_parameters[5].kind)
-        self.assertEqual(ParameterClass.empty, raw_parameters[5].default)
+    def test_fly_raw_parameters(self):
+        raw_parameters = list(self.fly_task.raw_parameters.values())
+        self.assertEqual(3, len(raw_parameters))
+        self.assertFalse(self.fly_task.has_var_keyword)
+        self.assertTrue(self.fly_task.has_var_positional)
+
+        self.assertEqual("origin", raw_parameters[0].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[0].kind)
+        self.assertEqual(ParameterClass.empty, raw_parameters[0].default)
+
+        self.assertEqual("destination", raw_parameters[1].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[1].kind)
+        self.assertEqual(ParameterClass.empty, raw_parameters[1].default)
+
+        self.assertEqual("args", raw_parameters[2].name)
+        self.assertEqual(ParameterClass.VAR_POSITIONAL, raw_parameters[2].kind)
+        self.assertEqual(ParameterClass.empty, raw_parameters[2].default)
 
 
 class TaskSetArgumentTests(unittest.TestCase):
@@ -100,7 +117,6 @@ class TaskSetArgumentTests(unittest.TestCase):
             ("destination", ("*", ("destination",), {"type": six.text_type})),
             ("speed", ("*", ("-s", "--speed",), {"type": int, "default": 1, "required": False})),
             ("quiet", ("*", ("-q", "--quiet",), {"action": "store_true", "default": False, "required": False})),
-            ("args", ("*", ("args",), {"nargs": argparse.REMAINDER})),
             ("name", ("group1", ("name",), {"action": "store_true"})),
             ("value", ("group2", ("--value",), {"nargs": "?"})),
             ("year", ("group2", ("age",), {"dest": "year"})),
@@ -121,7 +137,7 @@ class TaskArgumentParserTests(unittest.TestCase):
         self.task_manager = TaskManager()
         self.task = Task(run, self.task_manager)
         self.task.set_argument("-a", "--answer", default=42, type=int)
-        self.task.setup_argparser()
+        self.task.finalize_argparser()
 
     def test_finalize_argparser(self):
         task = Task(run, self.task_manager)
@@ -139,10 +155,12 @@ class TaskArgumentParserTests(unittest.TestCase):
         self.assertEqual("resolve", self.task.parser.conflict_handler)
         self.assertEqual(self.task, self.task.parser.get_default("__task__"))
 
+        self.assertSequenceEqual(["origin", "destination"], self.task.positional_arguments)
+
         actions = OrderedDict(((action.dest, action) for action in self.task.parser._actions))
         """:type: dict[str, argparse.Action]"""
-        self.assertEqual(7, len(actions))
-        self.assertSequenceEqual(("help", "origin", "destination", "speed", "quiet", "args", "answer"),
+        self.assertEqual(6, len(actions))
+        self.assertSequenceEqual(("help", "origin", "destination", "speed", "quiet", "answer"),
                                  list(actions.keys()))
 
         self.assertIsInstance(actions["help"], argparse._HelpAction)
@@ -199,19 +217,6 @@ class TaskArgumentParserTests(unittest.TestCase):
         self.assertEqual(["-q", "--quiet"], actions["quiet"].option_strings)
         self.assertEqual(False, actions["quiet"].required)
         self.assertEqual(None, actions["quiet"].type)
-
-        self.assertIsInstance(actions["args"], argparse._StoreAction)
-        self.assertEqual(None, actions["args"].choices)
-        self.assertEqual(None, actions["args"].const)
-        self.assertEqual(None, actions["args"].default)
-        self.assertEqual("args", actions["args"].dest)
-        self.assertEqual(None, actions["args"].help)
-        self.assertEqual(None, actions["args"].metavar)
-        self.assertEqual(argparse.REMAINDER, actions["args"].nargs)
-        self.assertEqual(None, actions["args"].help)
-        self.assertEqual([], actions["args"].option_strings)
-        self.assertEqual(True, actions["args"].required)
-        self.assertEqual(None, actions["args"].type)
 
         self.assertIsInstance(actions["answer"], argparse._StoreAction)
         self.assertEqual(None, actions["answer"].choices)

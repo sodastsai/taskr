@@ -188,7 +188,10 @@ class Task(object):
 
         # Parse default registered arguments from the callable object
         self.has_var_keyword = False
+        self.has_var_positional = False
         self._argparser_finalized = False
+        self.positional_arguments = None
+        """:type: tuple[str]"""
         self.registered_arguments = OrderedDict()
         """:type : dict[str, tuple]"""
         for arg_name, parameter in self.raw_parameters.items():
@@ -209,9 +212,9 @@ class Task(object):
                     parameter_kwargs["type"] = six.text_type
             # kind of this parameter
             if parameter.kind == ParameterClass.VAR_POSITIONAL:
-                parameter_kwargs["nargs"] = argparse.REMAINDER
-                parameter_kwargs.pop("type")
-            if parameter.kind == ParameterClass.VAR_KEYWORD:
+                self.has_var_positional = True
+                continue
+            elif parameter.kind == ParameterClass.VAR_KEYWORD:
                 self.has_var_keyword = True
                 continue
 
@@ -245,8 +248,14 @@ class Task(object):
         def create_argument_group(argument_group):
             return self.parser.add_argument_group(title=argument_group)
 
+        positional_arguments = []
         for group, add_args, add_kwargs in self.registered_arguments.values():
-            parsers_groups.setdefault(group, create_argument_group(group)).add_argument(*add_args, **add_kwargs)
+            if len(add_args) == 1 and not add_args[0].startswith("-"):
+                positional_arguments.append(add_args[0])
+            parser = parsers_groups.setdefault(group, create_argument_group(group))  # type: argparse.ArgumentParser
+            parser.add_argument(*add_args, **add_kwargs)
+
+        self.positional_arguments = tuple(positional_arguments)
 
     # Parameters
 
