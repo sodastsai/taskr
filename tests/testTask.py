@@ -22,7 +22,7 @@ from collections import OrderedDict
 
 import six
 
-from taskr.taskr import Task, TaskManager, TaskrHelpFormatter
+from taskr.taskr import Task, TaskManager
 from taskr.parameters import ParameterClass
 
 
@@ -151,8 +151,6 @@ class TaskArgumentParserTests(unittest.TestCase):
             task.set_group_argument("time", "--year", default=2016)
 
     def test_setup_argparser(self):
-        self.assertEqual(TaskrHelpFormatter, self.task.parser.formatter_class)
-        self.assertEqual("resolve", self.task.parser.conflict_handler)
         self.assertEqual(self.task, self.task.parser.get_default("__task__"))
 
         self.assertSequenceEqual(["origin", "destination"], self.task.positional_arguments)

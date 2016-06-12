@@ -22,6 +22,7 @@ from collections import OrderedDict
 
 import six
 
+from .argparse import ArgumentParser
 from .decorators.once import oncemethod
 from .parameters import parameters_of_function, ParameterClass
 
@@ -63,16 +64,6 @@ def task_manager_decorator(tm_method):
     return wrapper
 
 
-class TaskrHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
-    pass
-
-
-_argparser_init_kwargs = {
-    "formatter_class": TaskrHelpFormatter,
-    "conflict_handler": "resolve",
-}
-
-
 @six.python_2_unicode_compatible
 class TaskManager(object):
 
@@ -84,7 +75,7 @@ class TaskManager(object):
         self.main_task = None  # type: Task
 
         # Argument parsers
-        self.parser = argparse.ArgumentParser(**_argparser_init_kwargs)
+        self.parser = ArgumentParser()
         self.action_subparser = self.parser.add_subparsers(title='Action')
         self._tasks_finalized = False
 
@@ -232,7 +223,7 @@ class Task(object):
     @property
     @oncemethod("_parser")
     def parser(self):
-        parser = self.task_manager.action_subparser.add_parser(self.name, **_argparser_init_kwargs)
+        parser = self.task_manager.action_subparser.add_parser(self.name)
         """:type: argparse.ArgumentParser"""
         parser.set_defaults(__task__=self)
         return parser
