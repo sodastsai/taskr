@@ -16,7 +16,6 @@
 
 from __future__ import unicode_literals, print_function, absolute_import, division
 
-import functools
 
 import six
 
@@ -34,7 +33,7 @@ def task_manager_decorator(tm_method):
     assert args_count >= 2, "Unsupported method signature of TaskManager"
 
     if args_count > 2:
-        @functools.wraps(tm_method)
+        @six.wraps(tm_method)
         def wrapper(tm, *tmm_args, **tmm_kwargs):
             """
             :type tm: TaskManager
@@ -46,7 +45,7 @@ def task_manager_decorator(tm_method):
                 return tm_method(tm, tm.get_or_create_task_object(task), *tmm_args, **tmm_kwargs)
             return wrapped
     else:
-        @functools.wraps(tm_method)
+        @six.wraps(tm_method)
         def wrapper(tm, task, *tmm_args, **tmm_kwargs):
             """
             :type tm: TaskManager

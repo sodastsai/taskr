@@ -18,10 +18,12 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 
 import functools
 
+import six
+
 
 def once(once_key=None, is_method=False):
     def decorator(func):
-        @functools.wraps(func)
+        @six.wraps(func)
         def wrapper(*args, **kwargs):
             result_attr = once_key or "_{}_taskr_once_result".format(getattr(func, "__name__", func))
             target = args[0] if is_method else func
