@@ -54,49 +54,49 @@ class TaskCreationTests(unittest.TestCase):
         self.assertEqual("run", six.text_type(self.run_task))
         self.assertEqual("<Task run>", "{!r}".format(self.run_task))
 
-    def test_run_raw_parameters(self):
-        raw_parameters = list(self.run_task.raw_parameters.values())
-        self.assertEqual(5, len(raw_parameters))
+    def test_run_callable_parameters(self):
+        callable_parameters = list(self.run_task.callable_parameters.values())
+        self.assertEqual(5, len(callable_parameters))
         self.assertTrue(self.run_task.has_var_keyword)
         self.assertFalse(self.run_task.has_var_positional)
 
-        self.assertEqual("origin", raw_parameters[0].name)
-        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[0].kind)
-        self.assertEqual(ParameterClass.empty, raw_parameters[0].default)
+        self.assertEqual("origin", callable_parameters[0].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, callable_parameters[0].kind)
+        self.assertEqual(ParameterClass.empty, callable_parameters[0].default)
 
-        self.assertEqual("destination", raw_parameters[1].name)
-        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[1].kind)
-        self.assertEqual(ParameterClass.empty, raw_parameters[1].default)
+        self.assertEqual("destination", callable_parameters[1].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, callable_parameters[1].kind)
+        self.assertEqual(ParameterClass.empty, callable_parameters[1].default)
 
-        self.assertEqual("speed", raw_parameters[2].name)
-        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[2].kind)
-        self.assertEqual(1, raw_parameters[2].default)
+        self.assertEqual("speed", callable_parameters[2].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, callable_parameters[2].kind)
+        self.assertEqual(1, callable_parameters[2].default)
 
-        self.assertEqual("quiet", raw_parameters[3].name)
-        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[3].kind)
-        self.assertEqual(False, raw_parameters[3].default)
+        self.assertEqual("quiet", callable_parameters[3].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, callable_parameters[3].kind)
+        self.assertEqual(False, callable_parameters[3].default)
 
-        self.assertEqual("kwargs", raw_parameters[4].name)
-        self.assertEqual(ParameterClass.VAR_KEYWORD, raw_parameters[4].kind)
-        self.assertEqual(ParameterClass.empty, raw_parameters[4].default)
+        self.assertEqual("kwargs", callable_parameters[4].name)
+        self.assertEqual(ParameterClass.VAR_KEYWORD, callable_parameters[4].kind)
+        self.assertEqual(ParameterClass.empty, callable_parameters[4].default)
 
-    def test_fly_raw_parameters(self):
-        raw_parameters = list(self.fly_task.raw_parameters.values())
-        self.assertEqual(3, len(raw_parameters))
+    def test_fly_callable_parameters(self):
+        callable_parameters = list(self.fly_task.callable_parameters.values())
+        self.assertEqual(3, len(callable_parameters))
         self.assertFalse(self.fly_task.has_var_keyword)
         self.assertTrue(self.fly_task.has_var_positional)
 
-        self.assertEqual("origin", raw_parameters[0].name)
-        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[0].kind)
-        self.assertEqual(ParameterClass.empty, raw_parameters[0].default)
+        self.assertEqual("origin", callable_parameters[0].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, callable_parameters[0].kind)
+        self.assertEqual(ParameterClass.empty, callable_parameters[0].default)
 
-        self.assertEqual("destination", raw_parameters[1].name)
-        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, raw_parameters[1].kind)
-        self.assertEqual(ParameterClass.empty, raw_parameters[1].default)
+        self.assertEqual("destination", callable_parameters[1].name)
+        self.assertEqual(ParameterClass.POSITIONAL_OR_KEYWORD, callable_parameters[1].kind)
+        self.assertEqual(ParameterClass.empty, callable_parameters[1].default)
 
-        self.assertEqual("args", raw_parameters[2].name)
-        self.assertEqual(ParameterClass.VAR_POSITIONAL, raw_parameters[2].kind)
-        self.assertEqual(ParameterClass.empty, raw_parameters[2].default)
+        self.assertEqual("args", callable_parameters[2].name)
+        self.assertEqual(ParameterClass.VAR_POSITIONAL, callable_parameters[2].kind)
+        self.assertEqual(ParameterClass.empty, callable_parameters[2].default)
 
 
 class TaskSetArgumentTests(unittest.TestCase):
@@ -153,7 +153,8 @@ class TaskArgumentParserTests(unittest.TestCase):
     def test_setup_argparser(self):
         self.assertEqual(self.task, self.task.parser.get_default("__task__"))
 
-        self.assertSequenceEqual(["origin", "destination"], self.task.positional_arguments)
+        self.assertSequenceEqual(["origin", "destination"],
+                                 [parameter.name for parameter in self.task.positional_parameters])
 
         actions = OrderedDict(((action.dest, action) for action in self.task.parser._actions))
         """:type: dict[str, argparse.Action]"""

@@ -181,11 +181,9 @@ class Task(object):
         self.has_var_keyword = False
         self.has_var_positional = False
         self._argparser_finalized = False
-        self.positional_arguments = None
-        """:type: tuple[str]"""
         self.registered_arguments = OrderedDict()
         """:type : dict[str, tuple]"""
-        for arg_name, parameter in self.raw_parameters.items():
+        for arg_name, parameter in self.callable_parameters.items():
             parameter_args = (arg_name,)
             parameter_kwargs = {}
             # default value and optional
@@ -239,21 +237,23 @@ class Task(object):
         def create_argument_group(argument_group):
             return self.parser.add_argument_group(title=argument_group)
 
-        positional_arguments = []
         for group, add_args, add_kwargs in self.registered_arguments.values():
-            if len(add_args) == 1 and not add_args[0].startswith("-"):
-                positional_arguments.append(add_args[0])
             parser = parsers_groups.setdefault(group, create_argument_group(group))  # type: argparse.ArgumentParser
             parser.add_argument(*add_args, **add_kwargs)
-
-        self.positional_arguments = tuple(positional_arguments)
 
     # Parameters
 
     @property
-    @oncemethod("_raw_parameters")
-    def raw_parameters(self):
+    @oncemethod("_callable_parameters")
+    def callable_parameters(self):
         return parameters_of_function(self.callable)
+
+    @property
+    @oncemethod("_positional_parameters")
+    def positional_parameters(self):
+        return [parameter for parameter in self.callable_parameters.values()
+                if parameter.kind == ParameterClass.POSITIONAL_OR_KEYWORD and
+                parameter.default == ParameterClass.empty]
 
     def set_group_argument(self, group, *args, **kwargs):
         assert not self._argparser_finalized, \
@@ -281,7 +281,7 @@ class Task(object):
                 raise ValueError("Cannot find destination of the flags '{}' for {}".format(', '.join(args), self))
 
         # Register
-        if not self.has_var_keyword and dest not in self.raw_parameters:
+        if not self.has_var_keyword and dest not in self.callable_parameters:
             raise ValueError("\"{}\" is not allowed to be added as an argument of {}."
                              " {} doesn't accept extra keyword args.".format(dest, self.name, self.name))
         self.registered_arguments[dest] = (group, args, kwargs)
