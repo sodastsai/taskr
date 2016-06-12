@@ -18,6 +18,7 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 
 import argparse
 import functools
+import types
 from collections import OrderedDict
 
 import six
@@ -41,9 +42,12 @@ class Task(object):
         self.task_manager = task_manager
 
         # Parse default registered arguments from the callable object
+        self._argparser_finalized = False
+        _callable = (self.callable if isinstance(self.callable, types.FunctionType) else self.callable.__call__)
+        callable_annotations = getattr(_callable, "__annotations__", {})
+        """:type: dict"""
         self.has_var_keyword = False
         self.has_var_positional = False
-        self._argparser_finalized = False
         self.registered_arguments = OrderedDict()
         """:type : dict[str, tuple]"""
         for arg_name, parameter in self.callable_parameters.items():
@@ -57,8 +61,12 @@ class Task(object):
             # action of this parameter
             if isinstance(parameter.default, bool):
                 parameter_kwargs["action"] = "store_false" if parameter.default else "store_true"
-            if "action" not in parameter_kwargs or parameter_kwargs["action"] in ("store", "append"):
-                if parameter.default != ParameterClass.empty and parameter.default is not None:
+            # type of this parameter
+            if parameter_kwargs.get("action", "store") in ("store", "append"):
+                annotation_type = callable_annotations.get(parameter.name)
+                if annotation_type is not None:
+                    parameter_kwargs["type"] = annotation_type
+                elif parameter.default != ParameterClass.empty and parameter.default is not None:
                     parameter_kwargs["type"] = parameter.default.__class__
                 else:
                     parameter_kwargs["type"] = six.text_type

@@ -134,6 +134,18 @@ class TaskSetArgumentTests(unittest.TestCase):
             self.task.set_argument("-x", type=int)
         self.assertEqual("Cannot find destination of the flags '-x' for run", str(exception_cm.exception))
 
+        if six.PY34:
+            # noinspection PyUnusedLocal
+            def swim(origin, destination, speed): pass
+            # Python 2 compatibility
+            swim.__annotations__ = {"origin": str, "destination": str, "speed": int}
+
+            task = Task(swim, self.task_manager)
+
+            self.assertEqual(str, task.registered_arguments["origin"][2]["type"])
+            self.assertEqual(str, task.registered_arguments["destination"][2]["type"])
+            self.assertEqual(int, task.registered_arguments["speed"][2]["type"])
+
 
 class TaskArgumentParserTests(unittest.TestCase):
 
