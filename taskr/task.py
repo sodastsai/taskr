@@ -84,7 +84,7 @@ class Task(object):
     @property
     @oncemethod("_parser")
     def parser(self):
-        parser = self.task_manager.action_subparser.add_parser(self.name)
+        parser = self.task_manager.task_subparser.add_parser(self.name)
         """:type: argparse.ArgumentParser"""
         parser.set_defaults(__task__=self)
         return parser

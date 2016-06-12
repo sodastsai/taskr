@@ -17,11 +17,14 @@
 from __future__ import unicode_literals, print_function, absolute_import, division
 
 import argparse
+import sys
 import unittest
 from collections import OrderedDict
 
 import six
 
+from taskr.argparse import ArgumentTypeError
+from taskr.contextmanagers.sys import capture_stdio
 from taskr.task import Task
 from taskr.task_manager import TaskManager, task_manager_decorator
 
@@ -75,7 +78,7 @@ class TaskManagerTests(unittest.TestCase):
 
     def test_argparser(self):
         action_subparser = self.task_manager.parser._actions[1]
-        self.assertEqual(action_subparser, self.task_manager.action_subparser)
+        self.assertEqual(action_subparser, self.task_manager.task_subparser)
         self.assertIsInstance(action_subparser, argparse._SubParsersAction)
 
     def test_finalize(self):
@@ -90,6 +93,213 @@ class TaskManagerTests(unittest.TestCase):
         self.assertTrue(all((task._argparser_finalized for task in self.task_manager.tasks)))
         self.assertTrue(run._argparser_finalized)
         self.assertTrue(fly._argparser_finalized)
+
+    def test_parse(self):
+        # noinspection PyUnusedLocal
+        @self.task_manager
+        @self.task_manager.set_argument("-a", "--answer", default=42, type=int)
+        def run(origin, destination, speed=1, **kwargs): pass
+
+        # noinspection PyUnusedLocal
+        @self.task_manager
+        def fly(origin, destination, *args): pass
+
+        with six.assertRaisesRegex(self, AssertionError, r"^Tasks should be finalized before parsing arguments\.$"):
+            self.task_manager.parse(args=())
+        self.task_manager.finalize()
+
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^cannot find task to execute\. \(choose from 'run', 'fly'\)$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.parse(args=())
+
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^the following arguments are required: origin, destination$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.parse(args=("run",))
+
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^the following arguments are required: destination$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.parse(args=("run", "tokyo",))
+
+        task, task_args, task_kwargs = self.task_manager.parse(args=("run", "tokyo", "osaka",))
+        self.assertEqual(run, task)
+        self.assertEqual(("tokyo", "osaka",), task_args)
+        self.assertEqual({"speed": 1, "answer": 42}, task_kwargs)
+
+        task, task_args, task_kwargs = self.task_manager.parse(args=("run", "tokyo", "osaka", "-s", "10"))
+        self.assertEqual(run, task)
+        self.assertEqual(("tokyo", "osaka",), task_args)
+        self.assertEqual({"speed": 10, "answer": 42}, task_kwargs)
+
+        task, task_args, task_kwargs = self.task_manager.parse(args=("run", "tokyo", "osaka", "--answer", "4242"))
+        self.assertEqual(run, task)
+        self.assertEqual(("tokyo", "osaka",), task_args)
+        self.assertEqual({"speed": 1, "answer": 4242}, task_kwargs)
+
+        with six.assertRaisesRegex(self, ArgumentTypeError, r"^unrecognized arguments: '56'$"):
+            self.task_manager.parse(args=("run", "tokyo", "osaka", "--speed", "100", "56"))
+
+        task, task_args, task_kwargs = self.task_manager.parse(args=("fly", "tokyo", "osaka", "56", "56"))
+        self.assertEqual(fly, task)
+        self.assertEqual(("tokyo", "osaka", "56", "56"), task_args)
+        self.assertEqual({}, task_kwargs)
+
+    def test_dispatch(self):
+        @self.task_manager
+        @self.task_manager.set_argument("-a", "--answer", default=42, type=int)
+        def run(origin, destination, speed=1, **kwargs):
+            return {"task": "run", "origin": origin, "destination": destination, "speed": speed, "kwargs": kwargs}
+
+        # noinspection PyUnusedLocal
+        @self.task_manager
+        def fly(origin, destination, *args):
+            return {"task": "fly", "origin": origin, "destination": destination, "args": args}
+
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^cannot find task to execute\. \(choose from 'run', 'fly'\)$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.dispatch(args=(), raise_exception=True)
+
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^the following arguments are required: origin, destination$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.dispatch(args=("run",), raise_exception=True)
+
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^the following arguments are required: destination$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.dispatch(args=("run", "tokyo",), raise_exception=True)
+
+        self.assertEqual(
+            {"task": "run", "origin": "tokyo", "destination": "osaka", "speed": 1, "kwargs": {"answer": 42}},
+            self.task_manager.dispatch(args=("run", "tokyo", "osaka",))
+        )
+        self.assertEqual(
+            {"task": "run", "origin": "tokyo", "destination": "osaka", "speed": 100, "kwargs": {"answer": 42}},
+            self.task_manager.dispatch(args=("run", "tokyo", "osaka", "-s", "100"))
+        )
+        self.assertEqual(
+            {"task": "run", "origin": "tokyo", "destination": "osaka", "speed": 10, "kwargs": {"answer": 4242}},
+            self.task_manager.dispatch(args=("run", "tokyo", "osaka", "--speed", "10", "-a", "4242"))
+        )
+
+        with six.assertRaisesRegex(self, ArgumentTypeError, r"^unrecognized arguments: '5656'$"):
+            self.task_manager.dispatch(args=("run", "tokyo", "osaka", "5656"), raise_exception=True)
+
+        self.assertEqual({"task": "fly", "origin": "tokyo", "destination": "osaka", "args": ("55", "66")},
+                         self.task_manager.dispatch(args=("fly", "tokyo", "osaka", "55", "66",)))
+        self.assertEqual({"task": "fly", "origin": "tokyo", "destination": "osaka", "args": ()},
+                         self.task_manager.dispatch(args=("fly", "tokyo", "osaka",)))
+
+    def test_dispatch_with_sys(self):
+        @self.task_manager
+        @self.task_manager.set_argument("-a", "--answer", default=42, type=int)
+        def run(origin, destination, speed=1, **kwargs):
+            return {"task": "run", "origin": origin, "destination": destination, "speed": speed, "kwargs": kwargs}
+
+        # noinspection PyUnusedLocal
+        @self.task_manager
+        def fly(origin, destination, *args):
+            return {"task": "fly", "origin": origin, "destination": destination, "args": args}
+
+        original_argv = sys.argv
+
+        sys.argv = [original_argv[0]]
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^cannot find task to execute\. \(choose from 'run', 'fly'\)$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.dispatch(raise_exception=True)
+
+        sys.argv = [original_argv[0], "run"]
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^the following arguments are required: origin, destination$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.dispatch(raise_exception=True)
+
+        sys.argv = [original_argv[0], "run", "tokyo"]
+        with six.assertRaisesRegex(self, ArgumentTypeError,
+                                   r"^the following arguments are required: destination$" if six.PY3
+                                   else r"^too few arguments$"):
+            self.task_manager.dispatch(raise_exception=True)
+
+        sys.argv = [original_argv[0], "run", "tokyo", "osaka"]
+        self.assertEqual(
+            {"task": "run", "origin": "tokyo", "destination": "osaka", "speed": 1, "kwargs": {"answer": 42}},
+            self.task_manager.dispatch()
+        )
+        sys.argv = [original_argv[0], "run", "tokyo", "osaka", "-s", "100"]
+        self.assertEqual(
+            {"task": "run", "origin": "tokyo", "destination": "osaka", "speed": 100, "kwargs": {"answer": 42}},
+            self.task_manager.dispatch()
+        )
+        sys.argv = [original_argv[0], "run", "tokyo", "osaka", "--speed", "10", "-a", "4242"]
+        self.assertEqual(
+            {"task": "run", "origin": "tokyo", "destination": "osaka", "speed": 10, "kwargs": {"answer": 4242}},
+            self.task_manager.dispatch()
+        )
+
+        sys.argv = [original_argv[0], "run", "tokyo", "osaka", "5656"]
+        with six.assertRaisesRegex(self, ArgumentTypeError, r"^unrecognized arguments: '5656'$"):
+            self.task_manager.dispatch(raise_exception=True)
+
+        sys.argv = [original_argv[0], "fly", "tokyo", "osaka", "55", "66"]
+        self.assertEqual({"task": "fly", "origin": "tokyo", "destination": "osaka", "args": ("55", "66")},
+                         self.task_manager.dispatch())
+
+        sys.argv = [original_argv[0], "fly", "tokyo", "osaka"]
+        self.assertEqual({"task": "fly", "origin": "tokyo", "destination": "osaka", "args": ()},
+                         self.task_manager.dispatch())
+
+        sys.argv = original_argv
+
+    def test_dispatch_without_raise_expection(self):
+        @self.task_manager
+        @self.task_manager.set_argument("-a", "--answer", default=42, type=int)
+        def run(origin, destination, speed=1, **kwargs):
+            return {"task": "run", "origin": origin, "destination": destination, "speed": speed, "kwargs": kwargs}
+
+        # noinspection PyUnusedLocal
+        @self.task_manager
+        def fly(origin, destination, *args):
+            return {"task": "fly", "origin": origin, "destination": destination, "args": args}
+
+        message_template = ("usage: {prog} [-h] {{{{run,fly}}}} ...\n" +
+                            "{{prog}}: error: {{error}}\n").format(
+            prog=self.task_manager.parser.prog,
+        )
+
+        with capture_stdio() as captured_result, self.assertRaises(SystemExit):
+            self.task_manager.dispatch(args=())
+        self.assertEqual("", captured_result.captured_stdout)
+        self.assertEqual(message_template.format(error=("cannot find task to execute. (choose from 'run', 'fly')"
+                                                        if six.PY3 else "too few arguments"),
+                                                 prog=self.task_manager.parser.prog),
+                         captured_result.captured_stderr)
+
+        with capture_stdio() as captured_result, self.assertRaises(SystemExit):
+            self.task_manager.dispatch(args=("run",))
+        self.assertEqual("", captured_result.captured_stdout)
+        self.assertEqual(message_template.format(error=("the following arguments are required: origin, destination"
+                                                        if six.PY3 else "too few arguments"),
+                                                 prog=run.parser.prog),
+                         captured_result.captured_stderr)
+
+        with capture_stdio() as captured_result, self.assertRaises(SystemExit):
+            self.task_manager.dispatch(args=("run", "tokyo"))
+        self.assertEqual("", captured_result.captured_stdout)
+        self.assertEqual(message_template.format(error=("the following arguments are required: destination" if six.PY3
+                                                        else "too few arguments"),
+                                                 prog=run.parser.prog),
+                         captured_result.captured_stderr)
+
+        with capture_stdio() as captured_result, self.assertRaises(SystemExit):
+            self.task_manager.dispatch(args=("run", "tokyo", "osaka", "5566"))
+        self.assertEqual("", captured_result.captured_stdout)
+        self.assertEqual(message_template.format(error="unrecognized arguments: '5566'",
+                                                 prog=run.parser.prog),
+                         captured_result.captured_stderr)
 
 
 class TaskManagerDecoratorTests(TaskManagerTests):

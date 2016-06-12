@@ -16,10 +16,11 @@
 
 from __future__ import unicode_literals, print_function, absolute_import, division
 
+import sys
 
 import six
 
-from .argparse import ArgumentParser
+from .argparse import ArgumentParser, ArgumentTypeError
 from .parameters import parameters_of_function
 from .task import Task
 
@@ -71,7 +72,7 @@ class TaskManager(object):
 
         # Argument parsers
         self.parser = ArgumentParser()
-        self.action_subparser = self.parser.add_subparsers(title='Action')
+        self.task_subparser = self.parser.add_subparsers(title='Task')
         self._tasks_finalized = False
 
     def __repr__(self):
@@ -108,6 +109,45 @@ class TaskManager(object):
             for task in self.tasks:
                 task.finalize_argparser()
             self._tasks_finalized = True
+
+    def parse(self, args):
+        """
+        :type args: tuple[str]
+        :rtype: (Task, tuple, dict)
+        """
+        assert self._tasks_finalized, "Tasks should be finalized before parsing arguments."
+
+        task_kwargs, task_args = self.parser.parse_args(args=args)
+
+        task = task_kwargs.pop("__task__", None)  # type: Task
+        if task is None:
+            raise ArgumentTypeError("cannot find task to execute. (choose from {})".format(
+                ", ".join(("'{}'".format(task.name) for task in self.tasks))
+            ), self.parser)
+
+        if task_args and not task.has_var_positional:
+            raise ArgumentTypeError("unrecognized arguments: {}".format(
+                ", ".join(("'{}'".format(task_arg) for task_arg in task_args))
+            ), task.parser)
+        else:
+            task_args = tuple((task_kwargs.pop(param.name) for param in task.positional_parameters)) + task_args
+
+        return task, task_args, task_kwargs
+
+    def dispatch(self, args=None, raise_exception=False):
+        self.finalize()
+        args = args if args is not None else sys.argv[1:]
+        try:
+            task, task_args, task_kwargs = self.parse(args=args)
+        except ArgumentTypeError as e:
+            if raise_exception:
+                raise
+            else:
+                self.parser.print_usage(sys.stderr)
+                sys.stderr.write("{!r}\n".format(e))
+                sys.exit(1)
+
+        return task(*task_args, **task_kwargs)
 
     # Decorator
 
