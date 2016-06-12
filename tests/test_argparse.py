@@ -19,8 +19,6 @@ from __future__ import unicode_literals, print_function, absolute_import, divisi
 import sys
 import unittest
 
-import six
-
 from taskr.argparse import ArgumentParser, ArgumentTypeError, DefaultHelpFormatter
 
 
@@ -40,10 +38,9 @@ class TaskrArgumentParserTests(unittest.TestCase):
     def test_with_empty_sys(self):
         original_argv = sys.argv
         sys.argv = ["TaskrArgumentParserTests"]
-        with six.assertRaisesRegex(self, ArgumentTypeError, r"^the following arguments are required: name$") as cm:
+        with self.assertRaises(ArgumentTypeError) as cm:
             self.parser.parse_args()
-        self.assertEqual("{}: error: the following arguments are required: name".format(self.parser.prog),
-                         repr(cm.exception))
+        self.assertEqual("{}: error: {}".format(self.parser.prog, str(cm.exception)), repr(cm.exception))
         sys.argv = original_argv
 
     def test_with_sys_1(self):
@@ -65,10 +62,9 @@ class TaskrArgumentParserTests(unittest.TestCase):
         sys.argv = original_argv
 
     def test_with_empty_args(self):
-        with six.assertRaisesRegex(self, ArgumentTypeError, r"^the following arguments are required: name$") as cm:
+        with self.assertRaises(ArgumentTypeError) as cm:
             self.parser.parse_args(args=())
-        self.assertEqual("{}: error: the following arguments are required: name".format(self.parser.prog),
-                         repr(cm.exception))
+        self.assertEqual("{}: error: {}".format(self.parser.prog, str(cm.exception)), repr(cm.exception))
 
     def test_with_args_1(self):
         arguments, remainders = self.parser.parse_args(args=("Peter", "Alice"))

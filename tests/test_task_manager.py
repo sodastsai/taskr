@@ -49,6 +49,30 @@ class TaskManagerTests(unittest.TestCase):
         self.assertEqual("tasks=[run,fly], main=fly", six.text_type(self.task_manager))
         self.assertEqual("<TaskManager tasks=[run,fly], main=fly>", "{!r}".format(self.task_manager))
 
+    def test_get_or_create_task_object(self):
+        def run(): pass
+
+        run_task = self.task_manager.get_or_create_task_object(run)
+        self.assertIsInstance(run_task, Task)
+        self.assertIn(run_task, self.task_manager)
+
+        run_task2 = self.task_manager.get_or_create_task_object(run_task)
+        self.assertIs(run_task, run_task2)
+
+        with self.assertRaises(ValueError) as exception_cm:
+            self.task_manager.get_or_create_task_object(1)
+        self.assertEqual("1 object is not a callable", str(exception_cm.exception))
+
+    def test_contains(self):
+        @self.task_manager
+        def run(): pass
+
+        def fly(): pass
+
+        self.assertIn(run, self.task_manager)
+        self.assertNotIn(fly, self.task_manager)
+        self.assertNotIn("", self.task_manager)
+
     def test_argparser(self):
         action_subparser = self.task_manager.parser._actions[1]
         self.assertEqual(action_subparser, self.task_manager.action_subparser)

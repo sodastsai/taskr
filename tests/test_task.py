@@ -130,6 +130,10 @@ class TaskSetArgumentTests(unittest.TestCase):
         self.assertEqual("\"speed\" is not allowed to be added as an argument of fly. "
                          "fly doesn't accept extra keyword args.", str(exception_cm.exception))
 
+        with self.assertRaises(ValueError) as exception_cm:
+            self.task.set_argument("-x", type=int)
+        self.assertEqual("Cannot find destination of the flags '-x' for run", str(exception_cm.exception))
+
 
 class TaskArgumentParserTests(unittest.TestCase):
 

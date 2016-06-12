@@ -84,6 +84,11 @@ class TaskManager(object):
             string += ", main={}".format(self.main_task.name)
         return string
 
+    def __contains__(self, task):
+        if not isinstance(task, Task):
+            return False
+        return task in self.tasks
+
     def get_or_create_task_object(self, task_or_callable):
         """
         :type task_or_callable: function|Task
