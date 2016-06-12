@@ -22,7 +22,8 @@ from collections import OrderedDict
 
 import six
 
-from taskr.taskr import Task, TaskManager
+from taskr.task import Task
+from taskr.task_manager import TaskManager
 from taskr.parameters import ParameterClass
 
 

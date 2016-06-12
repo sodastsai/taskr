@@ -22,7 +22,8 @@ from collections import OrderedDict
 
 import six
 
-from taskr.taskr import Task, TaskManager, task_manager_decorator
+from taskr.task import Task
+from taskr.task_manager import TaskManager, task_manager_decorator
 
 
 class TaskManagerTests(unittest.TestCase):
