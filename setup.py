@@ -31,6 +31,7 @@ setup(name='taskr',
       test_suite="tests",
       install_requires=[
           'six>=1.10.0',
+          'enum34>=1.1.6',
       ],
       classifiers=[
           'Development Status :: 3 - Alpha',
