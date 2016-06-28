@@ -57,7 +57,7 @@ class ANSIEscapeCode(IntEnum):
         :type codes: collections.Iterable[ANSIEscapeCode]
         :rtype: str
         """
-        return '\033[{}m'.format(';'.join((six.text_type(code.value) for code in codes)))
+        return '\033[{}m'.format(';'.join(six.text_type(code.value) for code in codes))
 
 
 class ANSIEscapedString(object):

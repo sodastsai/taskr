@@ -109,7 +109,7 @@ class TaskManagerTests(unittest.TestCase):
         self.task_manager.finalize()
 
         with six.assertRaisesRegex(self, ArgumentTypeError,
-                                   r"^cannot find task to execute\. \(choose from 'run', 'fly'\)$" if six.PY3
+                                   r"^cannot find task to execute\. \(choose from 'run' and 'fly'\)$" if six.PY3
                                    else r"^too few arguments$"):
             self.task_manager.parse(args=())
 
@@ -158,7 +158,7 @@ class TaskManagerTests(unittest.TestCase):
             return {"task": "fly", "origin": origin, "destination": destination, "args": args}
 
         with six.assertRaisesRegex(self, ArgumentTypeError,
-                                   r"^cannot find task to execute\. \(choose from 'run', 'fly'\)$" if six.PY3
+                                   r"^cannot find task to execute\. \(choose from 'run' and 'fly'\)$" if six.PY3
                                    else r"^too few arguments$"):
             self.task_manager.dispatch(args=(), raise_exception=True)
 
@@ -208,7 +208,7 @@ class TaskManagerTests(unittest.TestCase):
 
         sys.argv = [original_argv[0]]
         with six.assertRaisesRegex(self, ArgumentTypeError,
-                                   r"^cannot find task to execute\. \(choose from 'run', 'fly'\)$" if six.PY3
+                                   r"^cannot find task to execute\. \(choose from 'run' and 'fly'\)$" if six.PY3
                                    else r"^too few arguments$"):
             self.task_manager.dispatch(raise_exception=True)
 
@@ -273,7 +273,7 @@ class TaskManagerTests(unittest.TestCase):
         with capture_stdio() as captured_result, self.assertRaises(SystemExit):
             self.task_manager.dispatch(args=())
         self.assertEqual("", captured_result.captured_stdout)
-        self.assertEqual(message_template.format(error=("cannot find task to execute. (choose from 'run', 'fly')"
+        self.assertEqual(message_template.format(error=("cannot find task to execute. (choose from 'run' and 'fly')"
                                                         if six.PY3 else "too few arguments"),
                                                  prog=self.task_manager.parser.prog),
                          captured_result.captured_stderr)

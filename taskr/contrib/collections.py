@@ -19,18 +19,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import six
 
 
-def to_string(iterable, threshold=-1, item="item", item_plural="items"):
+def iter_to_str(iterable, threshold=-1, item="item", item_plural="items"):
     """
     Convert an iterable to human-readable string representation.
 
     Example:
-    >>> to_string(range(2))
+    >>> iter_to_str(range(2))
     '0 and 1'
-    >>> to_string(range(3))
+    >>> iter_to_str(range(3))
     '0, 1, and 2'
-    >>> to_string(range(8), threshold=3)
+    >>> iter_to_str(range(8), threshold=3)
     '0, 1, 2, and 5 items'
-    >>> to_string(range(8), threshold=3, item="number", item_plural="numbers")
+    >>> iter_to_str(range(8), threshold=3, item="number", item_plural="numbers")
     '0, 1, 2, and 5 numbers'
 
     :param collections.Iterable iterable: The iterable which you want to convert to string representation

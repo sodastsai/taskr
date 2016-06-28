@@ -21,6 +21,7 @@ import sys
 import six
 
 from .argparse import ArgumentParser, ArgumentTypeError
+from .contrib.collections import iter_to_str
 from .parameters import parameters_of_function
 from .task import Task
 
@@ -122,15 +123,15 @@ class TaskManager(object):
         task = task_kwargs.pop("__task__", None)  # type: Task
         if task is None:
             raise ArgumentTypeError("cannot find task to execute. (choose from {})".format(
-                ", ".join(("'{}'".format(task.name) for task in self.tasks))
+                iter_to_str("'{}'".format(task.name) for task in self.tasks)
             ), self.parser)
 
         if task_args and not task.has_var_positional:
             raise ArgumentTypeError("unrecognized arguments: {}".format(
-                ", ".join(("'{}'".format(task_arg) for task_arg in task_args))
+                iter_to_str("'{}'".format(task_arg) for task_arg in task_args)
             ), task.parser)
         else:
-            task_args = tuple((task_kwargs.pop(param.name) for param in task.positional_parameters)) + task_args
+            task_args = tuple(task_kwargs.pop(param.name) for param in task.positional_parameters) + task_args
 
         return task, task_args, task_kwargs
 

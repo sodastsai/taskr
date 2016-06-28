@@ -23,6 +23,7 @@ from collections import OrderedDict
 
 import six
 
+from .contrib.collections import iter_to_str
 from .decorators.once import oncemethod
 from .parameters import parameters_of_function, ParameterClass
 
@@ -43,7 +44,7 @@ class Task(object):
 
         # Parse default registered arguments from the callable object
         self._argparser_finalized = False
-        _callable = (self.callable if isinstance(self.callable, types.FunctionType) else self.callable.__call__)
+        _callable = self.callable if isinstance(self.callable, types.FunctionType) else self.callable.__call__
         callable_annotations = getattr(_callable, "__annotations__", {})
         """:type: dict"""
         self.has_var_keyword = False
@@ -133,7 +134,7 @@ class Task(object):
         # Check argument Type
         args_count = len(args)
         assert args_count >= 1, "Expect at least one name or flag when calling `set_group_argument`."
-        positional_argument = all((not arg.startswith("-") for arg in args))
+        positional_argument = all(not arg.startswith("-") for arg in args)
 
         # Find destination of this argument
         if positional_argument:
@@ -149,7 +150,10 @@ class Task(object):
                     break
             if not dest:
                 # Raise exception
-                raise ValueError("Cannot find destination of the flags '{}' for {}".format(', '.join(args), self))
+                raise ValueError("Cannot find destination of the flags {} for {}".format(
+                    iter_to_str("'{}'".format(arg) for arg in args),
+                    self
+                ))
 
         # Register
         if not self.has_var_keyword and dest not in self.callable_parameters:
