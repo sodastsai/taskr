@@ -33,3 +33,17 @@ class ANSIEscapeCodeTests(TestCase):
     def test_ansi_escaped_string(self):
         hello = ANSIEscapedString("hello", ANSIEscapeCode.light, ANSIEscapeCode.bYellow, ANSIEscapeCode.fRed)
         self.assertEqual("\033[1;43;31mhello\033[0m", str(hello))
+
+    def test_from_string_normal_string(self):
+        escaped_string = ANSIEscapedString.from_string("XD")
+        self.assertEqual("XD", escaped_string.string)
+        self.assertSequenceEqual((), escaped_string.codes)
+
+    def test_from_string(self):
+        escaped_string = ANSIEscapedString.from_string("\033[1;31mYo\033[m")
+        self.assertEqual("Yo", escaped_string.string)
+        self.assertSequenceEqual((ANSIEscapeCode.light, ANSIEscapeCode.fRed), escaped_string.codes)
+
+    def test_strip(self):
+        self.assertEqual("XD", ANSIEscapedString.strip("XD"))
+        self.assertEqual("Yo", ANSIEscapedString.strip("\033[32mYo\033[m"))

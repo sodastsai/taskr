@@ -16,6 +16,7 @@
 
 from __future__ import unicode_literals, print_function, absolute_import, division
 
+import re
 # noinspection PyCompatibility
 from enum import IntEnum
 
@@ -60,7 +61,10 @@ class ANSIEscapeCode(IntEnum):
         return "\033[{}m".format(";".join(six.text_type(code.value) for code in codes))
 
 
+@six.python_2_unicode_compatible
 class ANSIEscapedString(object):
+
+    _escaped_string_pattern = re.compile(r"^\033\[(?P<codes>[\d;]*)m(?P<string>.*)\033\[m$")
 
     def __init__(self, string, *codes):
         """
@@ -69,6 +73,28 @@ class ANSIEscapedString(object):
         """
         self.string = string
         self.codes = codes
+
+    @classmethod
+    def from_string(cls, escaped_string):
+        """
+        :type escaped_string: str
+        :rtype: ANSIEscapedString
+        """
+        match = cls._escaped_string_pattern.match(escaped_string)
+        if match:
+            codes, string = match.groups()
+            codes = [int(code) for code in codes.split(";")] if codes else []
+        else:
+            codes, string = [], escaped_string
+        return cls(string, *codes)
+
+    @classmethod
+    def strip(cls, string):
+        """
+        :type string: str
+        :rtype: str
+        """
+        return cls.from_string(string).string
 
     def __str__(self):
         return "{}{}{}".format(
